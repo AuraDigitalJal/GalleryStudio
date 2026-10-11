@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f1eb">
+  <title>Gallery Studio · Event Gallery Builder</title>
+  <link rel="stylesheet" href="css/editor.css">
+  <script src="js/vendor/jszip.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">G</span>
+        <div><strong>GALLERY STUDIO</strong><small>Event Gallery Builder · v1.4.30 · motor Aura v5.6.4</small></div>
+      </div>
+      <div class="top-actions">
+        <span class="live-dot"><i></i> Vista en vivo</span>
+        <button class="btn secondary" id="openPreview">Vista móvil ↗</button>
+        <button class="btn secondary" id="refreshPreview">Actualizar</button>
+        <button class="btn secondary" id="jumpGitHub">Publicar en GitHub</button>
+        <button class="btn primary" id="generateZip">Generar ZIP</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="editor-pane">
+        <section class="intro">
+          <span class="eyebrow">GALERÍA DIGITAL</span>
+          <h1>Construye la historia.</h1>
+          <p>Fotografía de eventos con acomodo independiente por capítulo. La publicación conserva el motor de optimización de Aura v5.6.4.</p>
+        </section>
+
+        <nav class="quicknav" aria-label="Editor">
+          <button data-jump="secAppearance">Identidad</button>
+          <button data-jump="secHero">Portada</button>
+          <button data-jump="secSections">Capítulos</button>
+          <button data-jump="secPhotos">Fotos</button>
+          <button data-jump="secVideos">Multimedia</button>
+          <button data-jump="secPublish">Publicar</button>
+        </nav>
+
+        <form id="editorForm" autocomplete="off">
+          <details class="panel" id="secAppearance" open>
+            <summary><span><b>01</b> Identidad y estilo</span><i>＋</i></summary>
+            <div class="panel-body">
+              <label>Diseño del sitio
+                <select id="galleryStyle">
+                  <option value="organic">Orgánico editorial</option>
+                  <option value="framed">Portafolio tonal</option>
+                  <option value="minimal">Editorial limpio</option>
+                  <option value="layers">Capas suaves</option>
+                  <option value="split">Doble panel</option>
+                  <option value="cinematic">Cinemático</option>
+                  <option value="fineart">Fine Art</option>
+                  <option value="magazine">Revista editorial</option>
+                  <option value="dark">Editorial oscuro</option>
+                </select>
+                <small>El diseño cambia portada, banners y ritmo visual. El acomodo de fotos se decide por separado en cada capítulo.</small>
+              </label>
+              <div class="field-grid two">
+                <label>Diseño de portada
+                  <select id="coverStyle">
+                    <option value="classic">Clásica cinematográfica</option>
+                    <option value="centered">Editorial centrada</option>
+                    <option value="split">Doble panel</option>
+                    <option value="fineart">Fine Art · marco sutil</option>
+                  </select>
+                  <small>La portada se decide aparte del diseño general y de los acomodos de fotos.</small>
+                </label>
+                <label>Portada en móvil
+                  <select id="mobileCoverMode">
+                    <option value="mixed">Según el diseño</option>
+                    <option value="horizontal">Conservar marco horizontal</option>
+                    <option value="adaptive">Adaptarla al móvil</option>
+                  </select>
+                  <small>“Según el diseño” conserva marco horizontal en Clásica y Fine Art; las demás usan su composición móvil.</small>
+                </label>
+              </div>
+              <div class="field-grid two">
+                <label>Entrada de fotografías
+                  <select id="revealStyle">
+                    <option value="soft">Suave</option>
+                    <option value="editorial">Editorial</option>
+                    <option value="none">Sin animación</option>
+                  </select>
+                  <small>Solo anima la aparición; no modifica el acomodo.</small>
+                </label>
+              </div>
+              <div class="field-grid two">
+                <label>Identidad del estudio
+                  <select id="brandMode">
+                    <option value="text">Nombre escrito</option>
+                    <option value="logo">Logo PNG</option>
+                  </select>
+                </label>
+                <label>Nombre del estudio<input id="studioName" value="Nuestra Historia"><small id="studioNameHint">Se mostrará en la cabecera de la galería.</small></label>
+              </div>
+              <div id="studioLogoControls" class="logo-file-row" hidden>
+                <label class="file-field">Logo del estudio · PNG
+                  <input id="studioLogoFile" type="file" accept="image/png,.png">
+                  <span id="studioLogoFileName">Selecciona un PNG con fondo transparente</span>
+                  <small>Se ajusta automáticamente sin deformarse ni invadir la navegación.</small>
+                </label>
+                <div class="studio-logo-preview" aria-label="Vista previa del logo"><img id="studioLogoPreview" alt="Vista previa del logo" hidden></div>
+              </div>
+              <div class="field-grid two">
+                <label>Color acento<input id="accentColor" type="color" value="#a58d63"></label>
+                <label>Fondo<input id="backgroundColor" type="color" value="#f5f2ec"></label>
+              </div>
+              <label>Texto<input id="textColor" type="color" value="#2f2c28"></label>
+            </div>
+          </details>
+
+          <details class="panel" id="secHero">
+            <summary><span><b>02</b> Portada</span><i>＋</i></summary>
+            <div class="panel-body">
+              <label>Texto pequeño sobre el título<input id="heroEyebrow" value="NUESTRA HISTORIA" placeholder="Déjalo vacío para ocultarlo"><small>Este es el texto que aparecía fijo como “NUESTRA HISTORIA”. Ahora puedes cambiarlo o borrarlo.</small></label>
+              <div class="field-grid two">
+                <label>Título del evento<input id="eventTitle" value="Mariana + Luis"></label>
+                <label>Fecha<input id="eventDate" type="date" value="2026-10-12"></label>
+              </div>
+              <label>Subtítulo<input id="eventSubtitle" value="Un día para siempre."></label>
+              <label>Texto breve<textarea id="eventDescription" rows="3">Gracias por ser parte de esta historia.</textarea></label>
+              <label class="file-field">Banner principal
+                <input id="heroFile" type="file" accept="image/*">
+                <span id="heroFileName">Selecciona una fotografía horizontal</span>
+              </label>
+              <div class="field-grid two">
+                <label>Encuadre horizontal <output id="heroXOut">50%</output><input id="heroX" type="range" min="0" max="100" value="50"></label>
+                <label>Encuadre vertical <output id="heroYOut">50%</output><input id="heroY" type="range" min="0" max="100" value="50"></label>
+              </div>
+              <div class="share-settings" id="socialSharingSettings">
+                <strong>Miniatura para WhatsApp y Facebook</strong>
+                <small>Se genera una imagen horizontal optimizada de 1200 × 630 px al exportar o publicar. La portada se usa automáticamente, pero puedes elegir otra foto.</small>
+                <label>Título al compartir<input id="shareTitle" type="text" placeholder="Se usa el título del evento"></label>
+                <label>Descripción al compartir<textarea id="shareDescription" rows="2" placeholder="Se usa el subtítulo y texto de portada"></textarea></label>
+                <label>Fotografía para la miniatura
+                  <select id="shareImageSource"><option value="hero">Portada principal (automático)</option></select>
+                </label>
+                <div class="share-image-preview" id="shareImagePreview" aria-label="Fotografía elegida para la miniatura"><img id="sharePreviewImg" alt="Vista de la fotografía para compartir" hidden><span id="sharePreviewPlaceholder">La portada aparecerá aquí al cargarla.</span></div>
+                <label>Dirección pública de la galería <small>Opcional. Para publicar en GitHub se detecta automáticamente; indícala si usas dominio personalizado o subirás el ZIP por tu cuenta.</small>
+                  <input id="sharePublicUrl" type="url" placeholder="https://tudominio.com/tu-galeria/" inputmode="url">
+                </label>
+                <small>WhatsApp y Facebook pueden tardar en actualizar las miniaturas que ya hayan guardado en caché.</small>
+              </div>
+              <label>Apoyo de lectura sobre portada <output id="coverBoxOpacityOut">91%</output><input id="coverBoxOpacity" type="range" min="0" max="100" value="91"><small>Controla solo la intensidad del degradado detrás del texto en los estilos que lo necesitan. Ya no crea rectángulos encima de la fotografía.</small></label>
+              <p class="hint">En escritorio la portada conserva 16:7. En móvil puedes dejar que cada diseño decida, conservar deliberadamente el marco horizontal o usar una composición adaptada.</p>
+            </div>
+          </details>
+
+          <details class="panel" id="secSections">
+            <summary><span><b>03</b> Capítulos y orden</span><i>＋</i></summary>
+            <div class="panel-body"><p class="hint">Usa ↑ y ↓ para cambiar el orden de los capítulos y del bloque de video. Puedes poner Video después de la portada, entre dos capítulos o hasta el final. El mismo orden se usa en la navegación y en la galería publicada.</p><div id="sectionEditor"></div></div>
+          </details>
+
+          <details class="panel" id="secPhotos">
+            <summary><span><b>04</b> Fotografías</span><i>＋</i></summary>
+            <div class="panel-body">
+              <div class="field-grid two">
+                <label>Subir directamente a
+                  <select id="photoTargetSection"></select>
+                </label>
+                <label>Orden
+                  <select id="photoOrderMode"><option value="upload">Orden de carga</option><option value="name">Nombre de archivo</option></select>
+                </label>
+              </div>
+              <div class="aura-note"><b>Galerías largas:</b> en el modo normal aparecen grupos de 15 fotografías. Si eliges <b>Siempre desplegada</b> dentro de un capítulo, todas sus fotografías se muestran desde el inicio, sin botones de apertura ni de «ver más».</div>
+              <label class="dropzone" id="dropzone">
+                <input id="photoFiles" type="file" accept="image/*" multiple>
+                <strong>Arrastra fotos aquí o selecciona archivos</strong>
+                <span>JPG, JPEG, PNG, WebP o GIF · puedes subir muchas a la vez</span>
+              </label>
+              <div class="prep-status" id="prepStatus" hidden>
+                <div><span>Preparando vista previa</span><strong id="prepLabel">0 / 0</strong></div>
+                <progress id="prepProgress" value="0" max="1"></progress>
+              </div>
+              <div class="photo-list" id="photoList"></div>
+            </div>
+          </details>
+
+          <details class="panel" id="secVideos">
+            <summary><span><b>05</b> Multimedia</span><i>＋</i></summary>
+            <div class="panel-body">
+              <label class="file-field">Música ambiente
+                <input id="musicFile" type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,.mp3,.m4a,.aac,.ogg">
+                <span id="musicFileName">Selecciona MP3, M4A, AAC u OGG</span>
+                <small>Se conserva el archivo original. Para no engordar la galería, conviene usar audio ya comprimido.</small>
+              </label>
+              <label class="switch-row"><input id="musicPlayerVisible" type="checkbox" checked><span>Mostrar reproductor slim centrado sobre el menú</span></label>
+              <div class="field-grid two">
+                <label>Nombre de la canción<input id="musicTitle" type="text" placeholder="Se detecta del MP3"><small>Se lee de las etiquetas ID3 y puedes corregirlo.</small></label>
+                <label>Artista<input id="musicArtist" type="text" placeholder="Se detecta del MP3"><small>Se lee automáticamente si el archivo lo incluye.</small></label>
+              </div>
+              <label class="switch-row"><input id="musicLoop" type="checkbox" checked><span>Repetir en loop</span></label>
+              <div class="aura-note"><b>Inicio manual:</b> la música no se reproduce sola. Con la opción activa aparece el reproductor slim tipo liquid glass sobre el menú, sin cubrir la portada. Si lo ocultas, queda disponible el control pequeño de la cabecera. Sin audio no aparece ninguno.</div>
+              <hr style="border:0;border-top:1px solid rgba(50,45,40,.10);margin:18px 0">
+              <label class="switch-row"><input id="downloadEnabled" type="checkbox"><span>Mostrar descarga de fotografías</span></label>
+              <label>Enlace de descarga<input id="downloadUrl" type="url" inputmode="url" placeholder="https://we.tl/t-..."><small>Pega aquí tu enlace de WeTransfer. La opción “Descargar” solo aparece en la navegación cuando está activa y hay un enlace válido.</small></label>
+              <div class="aura-note"><b>Descarga:</b> se integra como “Descargar” dentro de la navegación debajo de la portada. Puedes activarla o quitarla en cualquier momento.</div>
+              <hr style="border:0;border-top:1px solid rgba(50,45,40,.10);margin:18px 0">
+              <label class="switch-row"><input id="videosEnabled" type="checkbox" checked><span>Mostrar sección de videos</span></label>
+              <div class="field-grid two">
+                <label>Etiqueta superior<input id="videosEyebrow" value="PELÍCULA" placeholder="Ej. NUESTRA PELÍCULA"></label>
+                <label>Título de la sección<input id="videosTitle" value="Videos del evento" placeholder="Ej. Nuestra película"></label>
+              </div>
+              <label>URL Video 1<input id="video1" placeholder="https://www.youtube.com/watch?v=..."></label>
+              <label>Texto Video 1<input id="video1Label" value="Video 1" placeholder="Ej. Resumen de nuestra boda"></label>
+              <label>URL Video 2<input id="video2" placeholder="https://www.youtube.com/watch?v=..."></label>
+              <label>Texto Video 2<input id="video2Label" value="Video 2" placeholder="Ej. La fiesta"></label>
+            </div>
+          </details>
+
+          <details class="panel advanced-panel" id="secOptimize">
+            <summary><span><b>07</b> Optimización avanzada</span><i>＋</i></summary>
+            <div class="panel-body">
+              <p class="hint strong">Una sola imagen publicada por fotografía. Sin miniaturas duplicadas.</p>
+              <div class="quality-options">
+                <label><input type="radio" name="imageProfile" value="200"><span><b>200 KB</b><small>Ahorro · misma lógica Aura adaptada</small></span></label>
+                <label><input type="radio" name="imageProfile" value="300"><span><b>300 KB</b><small>Intermedio · misma lógica Aura adaptada</small></span></label>
+                <label class="recommended"><input type="radio" name="imageProfile" value="500" checked><span><b>500 KB</b><small>Aura v5.6.4 exacto · recomendado</small></span></label>
+              </div>
+              <div class="aura-note">
+                <b>Perfil 500 KB exacto de Aura:</b> objetivo 500 KB, máximo 550 KB, mínimo 430 KB, lado mayor inicial 3000 px, 10 iteraciones de búsqueda de calidad y reducción de resolución solo si hace falta.
+              </div>
+              <div id="optimizationReport" class="optimization-report">Aún no se ha generado una publicación.</div>
+            </div>
+          </details>
+
+          <details class="panel advanced-panel" id="secImport">
+            <summary><span><b>08</b> Recuperar galería</span><i>＋</i></summary>
+            <div class="panel-body">
+              <p class="hint">Pega la URL pública de la galería, su <code>config.json</code> o un enlace raw de GitHub.</p>
+              <label>URL de la galería/configuración<input id="configUrl" placeholder="https://usuario.github.io/repositorio/"></label>
+              <div class="inline-actions"><button type="button" class="btn secondary" id="loadConfigUrl">Cargar desde URL</button><span id="configStatus"></span></div>
+              <label class="file-field">O selecciona un config.json<input id="localConfig" type="file" accept=".json,application/json"><span>Seleccionar archivo</span></label>
+            </div>
+          </details>
+
+          <details class="panel" id="secPublish">
+            <summary><span><b>06</b> Publicar</span><i>＋</i></summary>
+            <div class="panel-body github-panel">
+              <p class="hint">El token vive solo en esta pestaña y nunca se incluye en el ZIP ni en <code>config.json</code>.</p>
+              <label>Token de GitHub <small>Fine-grained recomendado: Contents + Administration + Pages</small><input id="githubToken" type="password" placeholder="github_pat_… o ghp_…"></label>
+              <div class="inline-actions"><button type="button" class="btn secondary" id="githubConnect">Conectar GitHub</button><span id="githubAuthStatus">Sin conectar</span></div>
+              <label>Repositorio de esta galería<input id="githubRepo" placeholder="boda-mariana-luis"></label>
+              <button type="button" class="btn primary full" id="githubPublish" disabled>Publicar galería</button>
+              <div class="publish-progress" id="publishProgress" hidden><progress id="publishBar" value="0" max="1"></progress><span id="publishLabel"></span></div>
+              <p id="githubPublishStatus" class="status-line" aria-live="polite"></p>
+              <div id="githubPagesActions" class="published-box" hidden>
+                <label>Enlace público<input id="githubPagesUrl" readonly></label>
+                <div class="inline-actions"><a class="btn secondary" id="githubPagesLink" target="_blank" rel="noopener">Abrir galería ↗</a><button type="button" class="btn secondary" id="copyPublicUrl">Copiar enlace</button></div>
+              </div>
+            </div>
+          </details>
+        </form>
+      </aside>
+
+      <section class="preview-pane">
+        <div class="preview-head">
+          <div><span class="eyebrow">PREVIEW</span><h2>Vista en vivo</h2></div>
+          <div class="device-tabs"><button data-device="desktop" class="active">Escritorio</button><button data-device="mobile">Móvil ↗</button></div>
+        </div>
+        <div class="preview-stage desktop" id="previewStage">
+          <iframe id="previewFrame" title="Vista previa de la galería"></iframe>
+        </div>
+        <p class="preview-note">Escritorio permanece aquí. Móvil abre en un popup 393 × 852 con mockup de teléfono y se actualiza en vivo. El ZIP y GitHub siguen usando los archivos originales.</p>
+      </section>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+</html>
