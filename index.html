@@ -256,6 +256,14 @@
                 </div>
               </div>
               <button type="button" class="btn primary full" id="githubPublish" disabled>Publicar galería</button>
+              <details class="delete-gallery-area" style="margin-top:16px">
+                <summary style="cursor:pointer;color:#806764;font-size:12px">Administrar o eliminar galería publicada</summary>
+                <div style="padding-top:12px">
+                  <p class="hint">Al eliminar se retira la página pública y se borran las fotos optimizadas de Cloudflare R2. No se eliminan originales porque no se guardan aquí. Es irreversible.</p>
+                  <button type="button" class="btn secondary full" id="deleteGallery">Eliminar galería y fotos R2</button>
+                  <p class="status-line" id="deleteGalleryStatus" aria-live="polite"></p>
+                </div>
+              </details>
               <div class="publish-progress" id="publishProgress" hidden><progress id="publishBar" value="0" max="1"></progress><span id="publishLabel"></span></div>
               <p id="githubPublishStatus" class="status-line" aria-live="polite"></p>
               <div id="githubPagesActions" class="published-box" hidden>
