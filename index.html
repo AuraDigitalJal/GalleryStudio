@@ -277,6 +277,7 @@
                   <p class="hint">Eliminación definitiva: quita la galería, borra sus fotos de Cloudflare R2 y elimina su repositorio completo de GitHub. Se necesita permiso de administrador y confirmación. No se puede deshacer.</p>
                   <button type="button" class="btn secondary full" id="deleteGallery">Eliminar galería, fotos y repositorio GitHub</button>
                   <p class="status-line" id="deleteGalleryStatus" aria-live="polite"></p>
+                  <a class="btn secondary full" id="deleteRepoFallback" href="https://github.com/AuraDigitalJal/prueba/settings" target="_blank" rel="noopener noreferrer" hidden>Abrir GitHub para eliminar el repositorio que quedó pendiente</a>
                 </div>
               </details>
               <div class="publish-progress" id="publishProgress" hidden><progress id="publishBar" value="0" max="1"></progress><span id="publishLabel"></span></div>
