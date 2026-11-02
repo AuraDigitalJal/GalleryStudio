@@ -2086,7 +2086,6 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       const repoData=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo));
       if(repoData.default_branch!=='main')throw new Error('La galería debe estar en su rama main.');
       if(direct)direct.href='https://github.com/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/settings';
-      if(repoData.permissions?.admin===false)throw new Error('Esta conexión GitHub necesita permisos de administrador para borrar repositorios. No se borró nada.');
       let prior=null,alreadyRetired=false;
       try {
         prior=await readGitHubJsonFile(owner,repo,'aura-deleted.json');
@@ -2108,11 +2107,36 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       if(!alreadyRetired) {
         const nonce=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
         manifest={schemaVersion:1,status:'deleted',gallery:repo,storagePrefix:'galerias/'+repo+'/',nonce,deletedAt:new Date().toISOString()};
-        line.textContent='Retirando página y archivos de GitHub…';
+        line.textContent='Preparando eliminación segura en GitHub sin retirar todavía la galería…';
+        const gitBase='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
+        // Solo se publica el manifiesto, sin tocar todavía index.html.
+        // El Worker de R2 valida este comprobante antes de borrar sus fotos.
+        await githubRequest(gitBase+'/contents/aura-deleted.json',{
+          method:'PUT',
+          body:JSON.stringify({
+            message:'Preparar limpieza segura de fotos R2 de '+repo,
+            content:btoa(JSON.stringify(manifest,null,2))
+          })
+        });
+      }
+      // La misma clave utilizada para publicar autoriza la limpieza, pero
+      // Cloudflare comprueba también que GitHub tenga el manifiesto exacto.
+
+      line.textContent='Solicitando a Cloudflare eliminar todas las fotos de esta galería…';
+      const response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
+        method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
+        body:JSON.stringify({gallery:repo,nonce:manifest.nonce})
+      });
+      const data=await response.json().catch(()=>({message:'Error desconocido'}));
+      if(!response.ok||data.ok!==true)
+        throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
+      // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
+      if(!alreadyRetired) {
+        line.textContent='Cloudflare confirmó el borrado. Retirando la página pública…';
         const gitBase='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
         const head=await githubRequest(gitBase+'/git/ref/heads/main');
         const parentSha=head?.object?.sha;
-        if(!parentSha)throw new Error('No se pudo leer la rama actual de GitHub.');
+        if(!parentSha)throw new Error('GitHub no entregó la rama principal.');
         const tombstone='<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Galería no disponible</title><body style="font:16px system-ui;text-align:center;padding:12vh 16px;color:#333"><h1>Esta galería ya no está disponible</h1><p>El periodo de publicación ha finalizado.</p></body></html>';
         const tree=await githubRequest(gitBase+'/git/trees',{method:'POST',body:JSON.stringify({tree:[
           {path:'index.html',mode:'100644',type:'blob',content:tombstone},
@@ -2124,17 +2148,6 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         })});
         await githubRequest(gitBase+'/git/refs/heads/main',{method:'PATCH',body:JSON.stringify({sha:commit.sha,force:false})});
       }
-      // La misma clave utilizada para publicar autoriza la limpieza, pero
-      // Cloudflare comprueba también que GitHub tenga el manifiesto exacto.
-
-      line.textContent='Eliminando solamente las fotografías de esta galería en Cloudflare…';
-      const response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
-        method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
-        body:JSON.stringify({gallery:repo,nonce:manifest.nonce})
-      });
-      const data=await response.json().catch(()=>({message:'Error desconocido'}));
-      if(!response.ok||data.ok!==true)
-        throw new Error('La página fue retirada de GitHub, pero Cloudflare aún tiene fotografías. '+(data.message||'Vuelve a presionar Eliminar para reintentar.'));
       // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
       // Únicamente después de ello borramos el repositorio en GitHub.
       cloudflareCleaned=true;
