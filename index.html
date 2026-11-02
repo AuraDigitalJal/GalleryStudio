@@ -245,14 +245,29 @@
               <label>Token de GitHub <small>Fine-grained recomendado: Contents + Administration + Pages</small><input id="githubToken" type="password" placeholder="github_pat_… o ghp_…"></label>
               <div class="inline-actions"><button type="button" class="btn secondary" id="githubConnect">Conectar GitHub</button><span id="githubAuthStatus">Sin conectar</span></div>
               <label>Repositorio de esta galería<input id="githubRepo" placeholder="boda-mariana-luis"></label>
-              <div class="r2-settings">
-                <label class="switch-row"><input type="checkbox" id="r2Enabled"><span>Cloudflare R2 · fotos optimizadas (pruebas)</span></label>
-                <div id="r2Fields" hidden>
-                  <p class="hint">Mantiene la galería y GitHub Pages como siempre. Solamente las imágenes optimizadas se alojan en R2. No almacena originales ni agrega descargas.</p>
-                  <label>URL del Worker de subida<input id="r2UploadUrl" type="url" inputmode="url" placeholder="https://aura-gallery-r2-upload.tu-cuenta.workers.dev"></label>
-                  <label>Dominio público del bucket<input id="r2PublicUrl" type="url" inputmode="url" placeholder="https://fotos.auradigitaljal.com"></label>
-                  <label>Clave de publicación R2<input id="r2PublishKey" type="password" autocomplete="off" placeholder="Clave privada configurada en Cloudflare"></label>
-                  <small>La clave solo vive en esta pestaña. Nunca se incorpora a la galería, GitHub o config.json.</small>
+              <div class="r2-settings" style="padding:14px;margin:12px 0 16px;border:1px solid #d6c7b6;border-radius:12px;background:#fffaf3">
+                <label class="switch-row" style="display:flex;align-items:center;gap:10px;font-weight:650">
+                  <input type="checkbox" id="r2Enabled" checked>
+                  <span>Cloudflare R2 · subir fotos optimizadas</span>
+                </label>
+                <div id="r2Fields" style="margin-top:12px">
+                  <p class="hint"><strong>R2 está configurado para esta plataforma de pruebas.</strong> No tienes que escribir las direcciones cada vez. Para publicar, introduce tu clave privada de Cloudflare.</p>
+                  <label>Clave privada de Cloudflare R2
+                    <input id="r2PublishKey" type="password" autocomplete="off" placeholder="Escribe aquí la clave que creaste en Cloudflare">
+                  </label>
+                  <details style="margin-top:12px">
+                    <summary style="cursor:pointer;font-weight:600">Ver o cambiar los datos de Cloudflare</summary>
+                    <div style="padding-top:10px">
+                      <label>URL del Worker de Cloudflare
+                        <input id="r2UploadUrl" type="url" inputmode="url" value="https://aura-gallery-r2-upload.visual-arts-jal.workers.dev">
+                      </label>
+                      <label>URL pública de las fotografías
+                        <input id="r2PublicUrl" type="url" inputmode="url" value="https://pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev">
+                      </label>
+                      <small>Ambas direcciones ya están guardadas en esta versión. Solo cámbialas si modificamos Cloudflare.</small>
+                    </div>
+                  </details>
+                  <small>La clave privada se utiliza solo en este navegador. No se incorpora a GitHub ni a las galerías.</small>
                 </div>
               </div>
               <button type="button" class="btn primary full" id="githubPublish" disabled>Publicar galería</button>
