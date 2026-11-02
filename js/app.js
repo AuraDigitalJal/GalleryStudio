@@ -2123,11 +2123,21 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       // Cloudflare comprueba también que GitHub tenga el manifiesto exacto.
 
       line.textContent='Solicitando a Cloudflare eliminar todas las fotos de esta galería…';
-      const response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
-        method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
-        body:JSON.stringify({gallery:repo,nonce:manifest.nonce})
-      });
-      const data=await response.json().catch(()=>({message:'Error desconocido'}));
+      let response,data;
+      // GitHub puede tardar unos segundos en mostrar el comprobante nuevo.
+      // No retirar la página ni el repo mientras R2 no confirme éxito.
+      for (let attempt=0;attempt<4;attempt++) {
+        response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
+          method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
+          body:JSON.stringify({gallery:repo,nonce:manifest.nonce}),
+          cache:'no-store'
+        });
+        data=await response.json().catch(()=>({message:'Respuesta no válida de Cloudflare'}));
+        if (response.ok && data.ok===true) break;
+        if (response.status!==409 || attempt===3) break;
+        line.textContent='Esperando que GitHub confirme la autorización de limpieza ('+(attempt+1)+'/3)…';
+        await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+      }
       if(!response.ok||data.ok!==true)
         throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
       // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
