@@ -2065,7 +2065,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
   }
   async function deleteGalleryAndR2() {
     const btn=$('deleteGallery'),line=$('deleteGalleryStatus');
+    const direct=$('deleteRepoFallback');
     if(!btn||btn.disabled)return;
+    if(direct)direct.hidden=true;
     btn.disabled=true;line.textContent='Comprobando permisos…';
     let cloudflareCleaned=false;
     try {
@@ -2083,6 +2085,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       // Evitamos eliminar repositorios externos o equivocados.
       const repoData=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo));
       if(repoData.default_branch!=='main')throw new Error('La galería debe estar en su rama main.');
+      if(direct)direct.href='https://github.com/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/settings';
       if(repoData.permissions?.admin===false)throw new Error('Esta conexión GitHub necesita permisos de administrador para borrar repositorios. No se borró nada.');
       let prior=null,alreadyRetired=false;
       try {
@@ -2150,6 +2153,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }catch(error){
       console.error('No se completó eliminación conjunta',error);
       line.textContent=(cloudflareCleaned?'Cloudflare confirmó que las fotos fueron eliminadas. GitHub aún conserva el repositorio. ':'Atención: ')+(error.message||String(error));
+      if(direct && cloudflareCleaned)direct.hidden=false;
     }finally{btn.disabled=false;}
   }
 
