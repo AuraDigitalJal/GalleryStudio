@@ -1707,11 +1707,13 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       $('githubAuthStatus').textContent = `Conectado: @${githubUser.login}`;
       if (!$('githubRepo').value.trim()) $('githubRepo').value = sanitizeFilePart(state.title);
       $('githubPublish').disabled = false;
+      $('deleteGallery').disabled = false;
       return true;
     } catch (e) {
       githubUser = null;
       $('githubAuthStatus').textContent = `Error: ${githubFriendlyError(e)}`;
       $('githubPublish').disabled = true;
+      $('deleteGallery').disabled = false;
       return false;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = old; }
@@ -2054,6 +2056,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         || ['auradigitaljal-github-io','auraplataforma55','gallerystudio','aurawebstudio'].includes(repo))
         throw new Error('Selecciona un repositorio válido de galería. No se puede eliminar la plataforma principal.');
       await requireGalleryDeletionAvailable();
+      const publishKey=$('r2PublishKey').value.trim();
+      if(!publishKey)throw new Error('Primero escribe la clave privada de Cloudflare R2. No se ha borrado nada.');
       // Evitamos eliminar repositorios externos o equivocados.
       const repoData=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo));
       if(repoData.default_branch!=='main')throw new Error('La galería debe estar en su rama main.');
@@ -2096,8 +2100,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       }
       // La misma clave utilizada para publicar autoriza la limpieza, pero
       // Cloudflare comprueba también que GitHub tenga el manifiesto exacto.
-      const publishKey=$('r2PublishKey').value.trim();
-      if(!publishKey)throw new Error('La galería se retiró de GitHub, pero falta la clave de R2 para limpiar las fotos. Escríbela y vuelve a presionar Eliminar.');
+
       line.textContent='Eliminando solamente las fotografías de esta galería en Cloudflare…';
       const response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
         method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
@@ -2112,7 +2115,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }catch(error){
       console.error('No se completó eliminación conjunta',error);
       line.textContent='Atención: '+(error.message||String(error));
-    }finally{btn.disabled=!githubUser;}
+    }finally{btn.disabled=false;}
   }
 
   function normalizeConfigUrl(input) {
