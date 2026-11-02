@@ -2042,6 +2042,27 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         throw new Error('La galería contiene imágenes fuera de Cloudflare R2; se detuvo para no borrar fotografías equivocadas.');
     }
   }
+  // Borrar el repositorio solo si quedó exactamente el marcador de baja.
+  // Impide borrar otras páginas de Aura Digital con el mismo nombre.
+  async function validateRepositoryForPermanentDeletion(owner,repo,nonce,expectedId) {
+    const base='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
+    const metadata=await githubRequest(base);
+    if(String(metadata.id)!==String(expectedId)||metadata.default_branch!=='main')
+      throw new Error('Cambió la identidad de la galería en GitHub. Se detuvo el borrado final.');
+    const manifest=await readGitHubJsonFile(owner,repo,'aura-deleted.json');
+    if(manifest.schemaVersion!==1||manifest.status!=='deleted'||manifest.gallery!==repo||
+       manifest.storagePrefix!=='galerias/'+repo+'/'||manifest.nonce!==nonce)
+      throw new Error('No coincide el comprobante de eliminación de GitHub.');
+    const files=await githubRequest(base+'/contents/?ref=main');
+    const expected=new Set(['.nojekyll','index.html','aura-deleted.json']);
+    if(!Array.isArray(files)||files.length!==3||files.some(f=>f.type!=='file'||!expected.has(f.name)))
+      throw new Error('El repositorio tiene archivos adicionales. Se conservó por seguridad.');
+    const page=await githubRequest(base+'/contents/index.html?ref=main');
+    const bytes=Uint8Array.from(atob(String(page.content||'').replace(/\s/g,'')),c=>c.charCodeAt(0));
+    const html=new TextDecoder().decode(bytes);
+    if(!html.includes('<title>Galería no disponible</title>')||!html.includes('Esta galería ya no está disponible'))
+      throw new Error('La página del repositorio ya no es el aviso de baja. Se conservó por seguridad.');
+  }
   async function deleteGalleryAndR2() {
     const btn=$('deleteGallery'),line=$('deleteGalleryStatus');
     if(!btn||btn.disabled)return;
@@ -2061,6 +2082,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       // Evitamos eliminar repositorios externos o equivocados.
       const repoData=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo));
       if(repoData.default_branch!=='main')throw new Error('La galería debe estar en su rama main.');
+      if(repoData.permissions?.admin===false)throw new Error('Esta conexión GitHub necesita permisos de administrador para borrar repositorios. No se borró nada.');
       let prior=null,alreadyRetired=false;
       try {
         prior=await readGitHubJsonFile(owner,repo,'aura-deleted.json');
@@ -2073,9 +2095,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         assertGalleryPathsMatchR2(config,repo);
       }
       const expected='ELIMINAR '+repo;
-      const typed=window.prompt('El borrado es irreversible. Para retirar la galería de GitHub y borrar sus fotos de Cloudflare, escribe exactamente:\n'+expected);
+      const typed=window.prompt('Se borrarán la galería, sus fotografías de Cloudflare y TODO su repositorio de GitHub. Escribe exactamente:\n'+expected);
       if(typed!==expected){line.textContent='Cancelado. No se borró nada.';return;}
-      if(!window.confirm('¿Confirmas eliminar la galería «'+repo+'» y todas sus fotografías optimizadas de Cloudflare? Esta acción no tiene deshacer.')){
+      if(!window.confirm('¿Confirmas ELIMINAR DEFINITIVAMENTE la galería «'+repo+'», sus fotos de R2 y TODO el repositorio en GitHub? No hay deshacer.')){
         line.textContent='Cancelado. No se borró nada.';return;
       }
       let manifest=prior;
@@ -2109,9 +2131,20 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       const data=await response.json().catch(()=>({message:'Error desconocido'}));
       if(!response.ok||data.ok!==true)
         throw new Error('La página fue retirada de GitHub, pero Cloudflare aún tiene fotografías. '+(data.message||'Vuelve a presionar Eliminar para reintentar.'));
-      line.textContent='Galería retirada y '+data.deleted+' archivos eliminados de Cloudflare R2. GitHub conserva únicamente una página de aviso.';
+      // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
+      // Únicamente después de ello borramos el repositorio en GitHub.
+      line.textContent='Fotos borradas de Cloudflare. Eliminando el repositorio de GitHub…';
+      await validateRepositoryForPermanentDeletion(owner,repo,manifest.nonce,repoData.id);
+      try {
+        await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{method:'DELETE'});
+      } catch (githubDeleteError) {
+        if (githubDeleteError?.status===403||githubDeleteError?.status===401)
+          throw new Error('Las fotos YA se borraron de Cloudflare. GitHub no autorizó eliminar el repositorio: el token debe tener Administración (lectura y escritura) o delete_repo. Corrige el permiso y vuelve a pulsar Eliminar.');
+        throw new Error('Las fotos YA se borraron de Cloudflare, pero faltó borrar el repositorio de GitHub: '+(githubDeleteError.message||githubDeleteError));
+      }
+      line.textContent='Eliminación completa: fotografías de Cloudflare y repositorio de GitHub borrados definitivamente.';
       $('githubPagesActions').hidden=true;
-      $('githubPublishStatus').textContent='Galería eliminada de la publicación. Fotos R2 limpiadas.';
+      $('githubPublishStatus').textContent='Galería, fotografías y repositorio eliminados.';
     }catch(error){
       console.error('No se completó eliminación conjunta',error);
       line.textContent='Atención: '+(error.message||String(error));
