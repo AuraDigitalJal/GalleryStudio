@@ -2067,6 +2067,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     const btn=$('deleteGallery'),line=$('deleteGalleryStatus');
     if(!btn||btn.disabled)return;
     btn.disabled=true;line.textContent='Comprobando permisos…';
+    let cloudflareCleaned=false;
     try {
       if(!githubUser){const connected=await connectGitHub();if(!connected)throw new Error('Conecta GitHub primero.');}
       // Solo galería con slug explícito, nunca el repositorio principal de Aura.
@@ -2133,6 +2134,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         throw new Error('La página fue retirada de GitHub, pero Cloudflare aún tiene fotografías. '+(data.message||'Vuelve a presionar Eliminar para reintentar.'));
       // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
       // Únicamente después de ello borramos el repositorio en GitHub.
+      cloudflareCleaned=true;
       line.textContent='Fotos borradas de Cloudflare. Eliminando el repositorio de GitHub…';
       await validateRepositoryForPermanentDeletion(owner,repo,manifest.nonce,repoData.id);
       try {
@@ -2147,7 +2149,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       $('githubPublishStatus').textContent='Galería, fotografías y repositorio eliminados.';
     }catch(error){
       console.error('No se completó eliminación conjunta',error);
-      line.textContent='Atención: '+(error.message||String(error));
+      line.textContent=(cloudflareCleaned?'Cloudflare confirmó que las fotos fueron eliminadas. GitHub aún conserva el repositorio. ':'Atención: ')+(error.message||String(error));
     }finally{btn.disabled=false;}
   }
 
