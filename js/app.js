@@ -1824,6 +1824,81 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     try { return await githubRequest(path); } catch (_) { return existing; }
   }
 
+  // Modo de pruebas: solamente se trasladan los archivos resultantes
+  // del optimizador Aura. La galería visual y el HTML conservan su diseño.
+  async function uploadOptimizedAssetsToR2(pkg, repoName, onProgress = () => {}) {
+    const uploadInput = $('r2UploadUrl').value.trim();
+    const publicInput = $('r2PublicUrl').value.trim();
+    const secret = $('r2PublishKey').value.trim();
+    const parseHttps = (raw, label) => {
+      let url; try { url = new URL(raw); } catch (_) { throw new Error('Escribe una URL válida para ' + label + '.'); }
+      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+        throw new Error(label + ' debe ser una URL HTTPS sin credenciales ni parámetros.');
+      }
+      return url;
+    };
+    const uploadBase = parseHttps(uploadInput, 'Worker R2');
+    const publicBase = parseHttps(publicInput, 'dominio público de R2');
+    if (!secret) throw new Error('Falta la clave de publicación R2.');
+
+    // Incluye también portada, banners y logo cuando el optimizador les haya
+    // asignado una ruta img-XXX, sin subir archivos originales de varios MB.
+    const imagePattern = /^assets\/img-\d{3,5}\.(?:jpe?g|png|webp|gif)$/i;
+    const images = pkg.assets.filter(a => imagePattern.test(a.path));
+    const maxBytes = profileSettings(state.imageProfile).max;
+    const invalid = images.find(a => a.size > maxBytes);
+    if (invalid) {
+      throw new Error('No se subió a R2 «' + invalid.sourceName + '»: supera el límite de ' + Math.ceil(maxBytes/1024) + ' KB del perfil actual. Convierte esta imagen a JPEG/WebP o vuelve a seleccionarla.');
+    }
+    const replacements = new Map();
+    let next = 0, done = 0;
+    const workers = Array.from({length:Math.min(4,images.length)}, async () => {
+      while (next < images.length) {
+        const a = images[next++];
+        const digest = await sha256Hex(a.blob);
+        const name = a.path.replace(/\.([^.]+)$/, '-' + digest.slice(0,16) + '.$1');
+        const key = 'galerias/' + repoName + '/' + name;
+        const target = new URL('/upload/' + key, uploadBase).href;
+        const publicUrl = new URL('/' + key, publicBase).href;
+        const contentType = a.blob.type || ({
+          jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif'
+        })[a.path.split('.').pop().toLowerCase()];
+        let response;
+        try {
+          response = await fetch(target, {
+            method:'PUT',
+            headers:{'Authorization':'Bearer ' + secret,'Content-Type':contentType},
+            body:a.blob
+          });
+        } catch (e) {
+          throw new Error('No se pudo conectar con Cloudflare R2 para «' + a.sourceName + '». Comprueba Worker y CORS. ' + (e?.message||''));
+        }
+        if (!response.ok) {
+          const message = await response.text().catch(()=> '');
+          throw new Error('Cloudflare R2 rechazó «' + a.sourceName + '» (' + response.status + '). ' + message.slice(0,240));
+        }
+        replacements.set(a.path, publicUrl);
+        done++;
+        onProgress(done, images.length);
+      }
+    });
+    await Promise.all(workers);
+
+    // Paths absolutos en el HTML y config.json; el sistema de recuperación
+    // admite URLs absolutas mediante new URL(path,base).
+    let indexHtml = pkg.indexHtml, configText = pkg.configText;
+    for (const [relative,absolute] of replacements) {
+      indexHtml = indexHtml.split(relative).join(absolute);
+      configText = configText.split(relative).join(absolute);
+    }
+    return {
+      indexHtml,
+      configText,
+      moved: new Set(replacements.keys()),
+      count: replacements.size
+    };
+  }
+
   async function publishGitHub() {
     if (!githubUser) { const ok = await connectGitHub(); if (!ok || !githubUser) return; }
     const repoName = sanitizeFilePart($('githubRepo').value || state.title);
@@ -1846,6 +1921,20 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         }
       }, suggestedPublicUrl);
 
+      // Activación opcional solo para pruebas. No modifica el modo GitHub actual.
+      let movedToR2 = new Set();
+      if ($('r2Enabled').checked) {
+        status.textContent = 'Subiendo solamente fotografías optimizadas a Cloudflare R2…';
+        const r2 = await uploadOptimizedAssetsToR2(pkg, repoName, (done,total) => {
+          bar.value = .5 + .03*(total ? done/total : 1);
+          label.textContent = 'Cloudflare R2: ' + done + '/' + total + ' fotos';
+        });
+        pkg.indexHtml = r2.indexHtml;
+        pkg.configText = r2.configText;
+        movedToR2 = r2.moved;
+        status.textContent = r2.count + ' archivos optimizados alojados en R2.';
+      }
+
       status.textContent = 'Revisando repositorio…'; bar.value = .53; label.textContent = 'Conectando con GitHub';
       const { repo, created } = await ensureRepo(githubUser.login, repoName);
       const owner = githubUser.login;
@@ -1861,7 +1950,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         { path: 'config.json', base64: textToBase64(pkg.configText) },
         { path: '.nojekyll', base64: textToBase64('') }
       ];
-      for (const a of pkg.assets) files.push({ path: a.path, base64: await blobToBase64(a.blob) });
+      for (const a of pkg.assets) {
+        if (!movedToR2.has(a.path)) files.push({ path: a.path, base64: await blobToBase64(a.blob) });
+      }
 
       const entries = new Array(files.length); let done = 0, next = 0;
       const workers = Array.from({ length: Math.min(4, files.length) }, async () => {
@@ -1982,6 +2073,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }));
     $('photoOrderMode').addEventListener('change',()=>{if($('photoOrderMode').value==='name'){state.photos.sort((a,b)=>a.file.name.localeCompare(b.file.name,'es',{numeric:true}));renderPhotoList();schedulePreview();}});
     $('loadConfigUrl').addEventListener('click',loadConfigFromUrl);$('localConfig').addEventListener('change',e=>loadLocalConfig(e.target.files?.[0]));
+    $('r2Enabled').addEventListener('change', () => { $('r2Fields').hidden = !$('r2Enabled').checked; });
     $('githubConnect').addEventListener('click',connectGitHub);$('githubPublish').addEventListener('click',publishGitHub);$('copyPublicUrl').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('githubPagesUrl').value);$('githubPublishStatus').textContent='Enlace copiado.'}catch(_){}});
     addEventListener('beforeunload',()=>{previewUrls.forEach(u=>URL.revokeObjectURL(u));try{detachedPreviewWindow?.close()}catch(_){}});
   }
