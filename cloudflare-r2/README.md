@@ -40,9 +40,10 @@
 - El editor comprueba que el repositorio sea una galería Aura con fotografías en R2; requiere la clave R2 y que el usuario escriba `ELIMINAR <slug>` y confirme.
 - Primero retira la página y sus archivos publicados de GitHub mediante un commit de sustitución (el repositorio y su historial **siguen existiendo**). Escribe `aura-deleted.json` con un nonce único.
 - Después solicita `POST /delete-gallery` al Worker con el slug y nonce. Worker comprueba la clave de publicación **y** que GitHub publique el manifiesto exacto antes de borrar únicamente `galerias/<slug>/`.
+- **Nuevo flujo**: después de la confirmación exitosa de Cloudflare, Gallery Studio valida que el repositorio contenga exclusivamente el aviso de baja y su manifiesto, y llama a `DELETE /repos/{owner}/{repo}` para borrar definitivamente el repositorio. Requiere permiso GitHub **Administration: write** (token fine-grained) o `delete_repo` (token clásico). No necesita ninguna modificación adicional al Worker. Si GitHub deniega el borrado, el repositorio permanece y se puede reintentar; R2 ya estará limpio.
 - Si falla la limpieza R2, el editor mostrará un error y permitirá repetir el proceso contra el mismo manifiesto. No debe darse por terminado hasta que confirme Cloudflare.
 - Importante: eliminar la galería manualmente desde el panel de GitHub no desencadena esta limpieza. Es necesario usar el botón coordinado de Gallery Studio.
-- **No se ha eliminado ninguna galería** en el proceso de preparación. La nueva ruta de borrado no está disponible en el Worker desplegado por el usuario hasta que se actualice el código allí.
+- La eliminación de fotos R2 ya se validó con la galería desechable `prueba`, retirada de GitHub y con el bucket vacío. **No se ha probado aún el nuevo borrado total del repositorio**. La opción está preparada en el editor público de pruebas.
 - **Pendiente**: desplegar el nuevo `src/worker.js` en el Worker existente y probar el borrado solo de una galería desechable. Nunca usar las galerías activas de clientes para esta primera prueba.
 
 ## Comprobaciones antes de activar producción
