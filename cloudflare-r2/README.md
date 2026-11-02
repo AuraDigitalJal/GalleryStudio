@@ -32,6 +32,19 @@
 - La opción de generar ZIP en el editor sigue siendo el comportamiento original; no se utiliza como descarga para invitados.
 - La **caducidad automática de 3–6 meses todavía no está implementada**. No habilitar reglas de borrado hasta coordinar la caducidad de las páginas de cada evento.
 
+
+## Eliminación conjunta (preparada, pendiente de activar y probar)
+
+- El editor experimental muestra **Publicar → Administrar o eliminar galería publicada**.
+- Antes de permitir ningún cambio destructivo, consulta `GET /capabilities`. El Worker anterior responde 405, por lo que **no borra nada** hasta que se despliegue la nueva versión.
+- El editor comprueba que el repositorio sea una galería Aura con fotografías en R2; requiere la clave R2 y que el usuario escriba `ELIMINAR <slug>` y confirme.
+- Primero retira la página y sus archivos publicados de GitHub mediante un commit de sustitución (el repositorio y su historial **siguen existiendo**). Escribe `aura-deleted.json` con un nonce único.
+- Después solicita `POST /delete-gallery` al Worker con el slug y nonce. Worker comprueba la clave de publicación **y** que GitHub publique el manifiesto exacto antes de borrar únicamente `galerias/<slug>/`.
+- Si falla la limpieza R2, el editor mostrará un error y permitirá repetir el proceso contra el mismo manifiesto. No debe darse por terminado hasta que confirme Cloudflare.
+- Importante: eliminar la galería manualmente desde el panel de GitHub no desencadena esta limpieza. Es necesario usar el botón coordinado de Gallery Studio.
+- **No se ha eliminado ninguna galería** en el proceso de preparación. La nueva ruta de borrado no está disponible en el Worker desplegado por el usuario hasta que se actualice el código allí.
+- **Pendiente**: desplegar el nuevo `src/worker.js` en el Worker existente y probar el borrado solo de una galería desechable. Nunca usar las galerías activas de clientes para esta primera prueba.
+
 ## Comprobaciones antes de activar producción
 - [ ] Una fotografía visible en galería apunta a Cloudflare R2.
 - [ ] La foto optimizada en R2 ocupa como máximo 550 KB con perfil 500 KB.
