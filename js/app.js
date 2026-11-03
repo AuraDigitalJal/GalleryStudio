@@ -1186,6 +1186,59 @@ body[data-style="split"] .chapter-banner{background:color-mix(in srgb,var(--bg) 
   .gallery-nav-zone .gallery-player-art{width:18px;height:25px}
   .gallery-nav-zone .gallery-player-play{width:23px;height:26px}
 }
+
+/* Vista experimental: Aura Signature. Solo se activa con el tema signature.
+   No modifica exportacion, imagenes, reproductor ni almacenamiento. */
+body[data-style="signature"] .page{width:min(calc(100% - 48px),1380px);margin-inline:auto}
+body[data-style="signature"] .sitebar{border-bottom:1px solid color-mix(in srgb,var(--ink) 10%,transparent)!important}
+body[data-style="signature"] .sitebrand-text{font-family:Georgia,"Times New Roman",serif;font-size:13px;letter-spacing:.13em}
+body[data-style="signature"] .hero{aspect-ratio:16/8;overflow:hidden;background:#c6bbac;border:0;border-radius:2px}
+body[data-style="signature"] .hero-shade{background:linear-gradient(90deg,rgba(20,17,16,.57),rgba(20,17,16,.12) 68%),linear-gradient(0deg,rgba(0,0,0,.22),transparent 55%)}
+body[data-style="signature"] .hero-copy{left:6.5%;right:auto;bottom:12%;width:min(84%,840px);max-width:none;transform:none;text-align:left;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+body[data-style="signature"] .hero-copy h1{font:400 clamp(48px,6.8vw,104px)/.99 Georgia,"Times New Roman",serif;letter-spacing:-.045em;text-wrap:balance;text-transform:none}
+body[data-style="signature"] .hero-copy .date{font-size:10px;letter-spacing:.26em}
+body[data-style="signature"] .hero-copy p{max-width:44ch;font:italic clamp(14px,1.6vw,18px)/1.6 Georgia,serif;opacity:.94}
+body[data-style="signature"] .gallery-nav-zone{margin-bottom:0}
+body[data-style="signature"] .subnav.chapter-strip{border-bottom:1px solid color-mix(in srgb,var(--ink) 12%,transparent)}
+body[data-style="signature"] .chapter{padding-top:55px}
+body[data-style="signature"] .chapter-banner{aspect-ratio:16/6;background:#c1b7a9;border:0;border-radius:2px}
+body[data-style="signature"] .banner-shade{background:linear-gradient(90deg,rgba(16,14,12,.55),rgba(16,14,12,.02) 80%)}
+body[data-style="signature"] .chapter-copy{left:6%;bottom:17%;padding:0;background:transparent;border:0;transform:none}
+body[data-style="signature"] .chapter-copy small{font-size:10px;letter-spacing:.24em;text-transform:uppercase}
+body[data-style="signature"] .chapter-copy h2{font:400 clamp(38px,5.5vw,78px)/1.04 Georgia,"Times New Roman",serif;letter-spacing:-.035em;text-wrap:balance;text-shadow:0 2px 20px rgba(0,0,0,.12)}
+body[data-style="signature"] .gallery-head{padding:28px 1px 18px;border-bottom:1px solid color-mix(in srgb,var(--ink) 12%,transparent);margin-bottom:18px}
+body[data-style="signature"] .gallery-head span{font:400 clamp(21px,2.3vw,29px)/1.1 Georgia,"Times New Roman",serif;letter-spacing:-.02em}
+body[data-style="signature"] .gallery-head small{font-size:10px;letter-spacing:.08em}
+body[data-style="signature"] .chapter>.highlights-block{padding-top:25px;padding-bottom:20px}
+body[data-style="signature"] .chapter .highlights-head{margin-bottom:16px}
+body[data-style="signature"] .chapter .highlights-head span{letter-spacing:.22em}
+body[data-style="signature"] .chapter .highlights-grid{gap:9px}
+body[data-style="signature"] .photo-grid .photo-tile img{transition:transform .5s cubic-bezier(.2,.65,.15,1)}
+@media(hover:hover) and (pointer:fine){body[data-style="signature"] .photo-grid .photo-tile:hover img{transform:scale(1.025)}}
+body[data-style="signature"] .gallery-more,body[data-style="signature"] .chapter .highlights-open{border-top-color:color-mix(in srgb,var(--ink) 18%,transparent);margin-top:27px}
+@media(max-width:760px){
+  body[data-style="signature"] .page{width:calc(100% - 20px);margin-inline:auto}
+  body[data-style="signature"] .sitebrand-text{font-size:11px;letter-spacing:.10em}
+  body[data-style="signature"]:not([data-mobile-cover="horizontal"]) .hero{aspect-ratio:4/5;min-height:0}
+  body[data-style="signature"] .hero-shade{background:linear-gradient(0deg,rgba(15,12,11,.73),rgba(15,12,11,.05) 72%)}
+  body[data-style="signature"] .hero-copy{left:7%;bottom:9%;width:86%;right:auto;text-align:left}
+  body[data-style="signature"] .hero-copy h1{font-size:clamp(40px,11vw,62px);line-height:1.02}
+  body[data-style="signature"] .hero-copy p{display:block;font-size:13px;line-height:1.45;margin-top:14px}
+  body[data-style="signature"][data-mobile-cover="horizontal"] .hero-copy p{display:none}
+  body[data-style="signature"] .chapter{padding-top:35px}
+  body[data-style="signature"] .chapter-banner{aspect-ratio:4/3;min-height:0}
+  body[data-style="signature"] .chapter-copy{left:7%;bottom:10%;width:86%}
+  body[data-style="signature"] .chapter-copy h2{font-size:clamp(34px,9.5vw,52px)}
+  body[data-style="signature"] .chapter-copy small{font-size:9px}
+  body[data-style="signature"] .gallery-head{padding:19px 1px 13px;margin-bottom:12px}
+  body[data-style="signature"] .gallery-head span{font-size:21px}
+  body[data-style="signature"] .gallery-head small{font-size:9px}
+  body[data-style="signature"] .chapter>.highlights-block{padding-top:16px;padding-bottom:12px}
+  body[data-style="signature"] .chapter .highlights-grid{gap:5px}
+  body[data-style="signature"] .gallery-more,body[data-style="signature"] .chapter .highlights-open{margin-top:20px}
+}
+@media(prefers-reduced-motion:reduce){body[data-style="signature"] .photo-grid .photo-tile img{transition:none}}
+
 </style></head><body data-style="${escapeAttr(m.style)}" data-cover="${escapeAttr(m.coverStyle || 'classic')}" data-mobile-cover="${escapeAttr(m.mobileCoverMode || 'mixed')}" data-reveal="${escapeAttr(m.revealStyle || 'soft')}"><header class="sitebar" id="sitebar">${brandHtml}<div class="site-actions">${musicTop}</div></header><main class="page"><section class="hero reveal-target" id="presentacion">${heroMedia}<div class="hero-shade"></div><div class="hero-copy">${heroEyebrow}<h1>${escapeHtml(m.title)}</h1><div class="date">${escapeHtml(m.dateText)}</div><p>${escapeHtml(m.subtitle)}<br>${escapeHtml(m.description)}</p></div></section><div class="gallery-nav-zone">${musicPlayer}<nav class="subnav chapter-strip" id="chapterStrip" aria-label="Capítulos">${drawerNav}</nav></div>${chapters}${videos}</main>${music}<div class="lightbox" id="lightbox"><button class="lb-close" aria-label="Cerrar">×</button><div class="lb-stage"><img alt="" draggable="false"></div><div class="lb-hint" aria-hidden="true"><span class="lb-hint-line"></span><small>desliza</small></div></div><script>
 (()=>{const qs=s=>document.querySelector(s),qsa=s=>[...document.querySelectorAll(s)];const contentOrder=${JSON.stringify(contentOrder)},page=qs('.page');if(page)contentOrder.forEach(id=>{const el=qs('#'+id);if(el)page.appendChild(el)});const chapterStrip=qs('#chapterStrip');let activeNavLink=null;const tracked=contentOrder.map(id=>qs('#'+id)).filter(Boolean);let navTick=false;function syncNav(){navTick=false;const threshold=Math.min(innerHeight*.22,150);let active=tracked[0];for(const el of tracked){if(el&&el.getBoundingClientRect().top<=threshold)active=el}if(active){const link=qs('[data-menu-link][href="#'+active.id+'"]');qsa('[data-menu-link]').forEach(a=>a.classList.toggle('active',a===link));if(link&&link!==activeNavLink){activeNavLink=link;link.classList.remove('chapter-arrive');void link.offsetWidth;link.classList.add('chapter-arrive');if(chapterStrip){const target=link.offsetLeft-(chapterStrip.clientWidth-link.offsetWidth)/2;chapterStrip.scrollTo({left:Math.max(0,target),behavior:'smooth'})}}}}function requestNav(){if(navTick)return;navTick=true;requestAnimationFrame(syncNav)}addEventListener('scroll',requestNav,{passive:true});addEventListener('resize',requestNav);syncNav();qsa('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const t=qs(a.getAttribute('href'));if(t){e.preventDefault();const top=t.getBoundingClientRect().top+(scrollY||0)-8;scrollTo({top:Math.max(0,top),behavior:'smooth'})}}));qsa('[data-highlights-open]').forEach(b=>b.addEventListener('click',()=>{const wrap=qs('#'+b.dataset.highlightsOpen);if(!wrap)return;const opening=wrap.classList.contains('gallery-collapsed');wrap.classList.toggle('gallery-collapsed',!opening);b.setAttribute('aria-expanded',String(opening));const label=b.querySelector('span');if(label)label.textContent=opening?'Ocultar galería':'Presiona aquí para ver la galería completa';if(opening)setTimeout(()=>wrap.scrollIntoView({behavior:'smooth',block:'start'}),30)}));/* Seis destacados visibles. Cada 3.8 s cambia una sola imagen, con fade y sin repeticiones.
    No rota si está fuera de pantalla, si la pestaña está oculta, si el usuario interactúa,
