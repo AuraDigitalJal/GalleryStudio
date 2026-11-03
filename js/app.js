@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.4.30';
+  const VERSION = '1.4.31';
   const $ = id => document.getElementById(id);
   const SECTION_DEFS = [
     ['getting-ready', 'Getting Ready', 'Los Preparativos'],
@@ -2114,16 +2114,23 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     if(capabilities.deleteGallery!==true)
       throw new Error('El Worker de Cloudflare todavía no admite eliminación conjunta. No se ha borrado nada.');
   }
+  // Dominios oficiales de lectura del mismo bucket: actual, futuro y legado.
+  const R2_APPROVED_PHOTO_HOSTS = new Set([
+    'fotos-prueba.auradigitaljal.com',
+    'fotos.auradigitaljal.com',
+    'pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev'
+  ]);
   function assertGalleryPathsMatchR2(config,repo) {
     if(config.schemaVersion!==1||!Array.isArray(config.photos)||config.photos.length<1)
       throw new Error('Este repositorio no parece una galería compatible; se detuvo el borrado.');
-    const publicHost=new URL($('r2PublicUrl').value).host;
-    const prefix='/galerias/'+repo+'/assets/';
+    const pattern=new RegExp('^/galerias/'+repo+'/assets/img-\\d{3,5}-[a-f0-9]{16}\\.(?:jpg|jpeg|png|webp|gif)$');
     for (const photo of config.photos) {
       let url;
       try{url=new URL(photo.path);}catch(_){throw new Error('La galería tiene fotos fuera de R2; no se ha borrado nada.');}
-      if(url.protocol!=='https:'||url.host!==publicHost||!url.pathname.startsWith(prefix))
-        throw new Error('La galería contiene imágenes fuera de Cloudflare R2; se detuvo para no borrar fotografías equivocadas.');
+      if(url.protocol!=='https:' || !R2_APPROVED_PHOTO_HOSTS.has(url.hostname) ||
+         url.host!==url.hostname || url.username || url.password || url.search || url.hash ||
+         !pattern.test(url.pathname))
+        throw new Error('Las fotografías no corresponden exclusivamente al almacenamiento R2 de esta galería. Se detuvo el borrado para proteger otros eventos.');
     }
   }
   // Borrar el repositorio solo si quedó exactamente el marcador de baja.
