@@ -1,0 +1,36 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Auditoría de fotografías · Aura Digital</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 20px;background:#f7f5f1;color:#292722}h1{font:38px/1.15 Georgia,serif}button{padding:12px 20px;background:#25211e;color:white;border:0;border-radius:7px;cursor:pointer;font-size:16px}button:disabled{opacity:.6;cursor:wait}progress{width:100%;height:20px}main{background:white;padding:24px;border:1px solid #e7e1d8;border-radius:12px}p{color:#45403a}pre{font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f1ed;padding:12px;border-radius:6px;max-height:280px;overflow:auto}</style></head><body><main><small>AURA DIGITAL · PRUEBA AISLADA</small><h1>Auditoría de fotografías</h1><p>Comprobaremos <strong>257 fotografías</strong> de Guadalupe y Emanuel desde Cloudflare Pages conectado a R2. No modificamos las fotos ni la galería del cliente.</p><button id="go">Comprobar 257 fotografías</button><p id="status" role="status">Lista para empezar.</p><progress id="progress" max="257" value="0"></progress><p id="numbers"></p><pre id="errors" hidden></pre><button id="copy" hidden>Copiar resultado</button><p><a href="/">Volver a la prueba de 3 fotografías</a></p></main><script>
+const button=document.getElementById('go'),status=document.getElementById('status'),progress=document.getElementById('progress'),numbers=document.getElementById('numbers'),errors=document.getElementById('errors'),copy=document.getElementById('copy');let report='';
+button.onclick=async()=>{
+ button.disabled=true;copy.hidden=true;errors.hidden=true;errors.textContent='';
+ try{
+  const source=await fetch('/fotos-auditoria.json',{cache:'no-store'});
+  if(!source.ok)throw Error('No se pudo cargar el inventario: HTTP '+source.status);
+  const list=await source.json(),paths=list.paths;
+  if(paths.length!==257)throw Error('El inventario no coincide con 257 fotografías');
+  progress.max=paths.length;progress.value=0;
+  let i=0,ok=0,done=0;const failures=[];
+  status.textContent='Verificando rutas mediante HEAD (sin descargar las imágenes completas)…';
+  async function check(){
+   while(i<paths.length){
+    const index=i++,path=paths[index];
+    try{
+     const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
+     let response;
+     try{response=await fetch(path,{method:'HEAD',cache:'no-store',signal:ctrl.signal});}
+     finally{clearTimeout(timer);}
+     if(response.status===200 && (response.headers.get('Content-Type')||'').startsWith('image/'))ok++;
+     else failures.push({n:index+1,path,status:response.status,type:response.headers.get('Content-Type')});
+    }catch(e){failures.push({n:index+1,path,error:String(e)});}
+    done++;progress.value=done;numbers.textContent='Revisadas: '+done+'/'+paths.length+' · Correctas: '+ok+' · Con error: '+failures.length;
+   }
+  }
+  await Promise.all(Array.from({length:8},()=>check()));
+  report='Auditoría R2 · Guadalupe y Emanuel\n'+'Total: '+paths.length+'\nCorrectas: '+ok+'\nErrores: '+failures.length;
+  status.textContent=failures.length===0?'RESULTADO: 257 de 257 fotografías accesibles.':'ATENCIÓN: '+failures.length+' fotografías con error. No modificar la galería.';
+  if(failures.length){errors.hidden=false;errors.textContent=JSON.stringify(failures.slice(0,30),null,2);}
+  copy.hidden=false;
+ }catch(e){status.textContent='No se pudo completar: '+e.message;}
+ finally{button.disabled=false;}
+};
+copy.onclick=()=>{if(navigator.clipboard)navigator.clipboard.writeText(report);else alert(report);}
+</script></body></html>
