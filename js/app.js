@@ -2094,10 +2094,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }
   }
 
-  // Borrado coordinado: primero retirar la galería de GitHub Pages,
-  // después limpiar exclusivamente su prefijo en Cloudflare R2.
-  // El repositorio GitHub sigue existiendo como registro, pero su página
-  // publicada ya no contiene fotos. Se permite reintentar si R2 falla.
+  // Borrado completo coordinado: primero validar la galería y publicar un
+  // comprobante en GitHub, luego borrar solo su prefijo de fotos en R2,
+  // retirar la página y eliminar finalmente el repositorio. Admitir reintentos.
   async function readGitHubJsonFile(owner,repo,file) {
     const payload=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/contents/'+file+'?ref=main');
     if(payload.encoding!=='base64'||!payload.content) throw new Error('GitHub no entregó '+file+'.');
@@ -2168,7 +2167,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       if(owner.toLowerCase()!=='auradigitaljal')
         throw new Error('Este borrado está disponible solo para galerías del GitHub de Aura Digital.');
       if(!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])$/.test(repo)
-        || ['auradigitaljal-github-io','auraplataforma55','gallerystudio','aurawebstudio'].includes(repo))
+        || ['auradigitaljal-github-io','auraplataforma55','gallery-studio','gallerystudio','aurawebstudio','auradigitaljal'].includes(repo))
         throw new Error('Selecciona un repositorio válido de galería. No se puede eliminar la plataforma principal.');
       await requireGalleryDeletionAvailable();
       const publishKey=$('r2PublishKey').value.trim();
@@ -2241,6 +2240,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       }
       if(!response.ok||data.ok!==true)
         throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
+      // Desde aquí R2 ya confirmó la eliminación aunque GitHub falle después.
+      cloudflareCleaned=true;
       // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
       if(!alreadyTombstoned) {
         line.textContent='Cloudflare confirmó el borrado. Retirando la página pública…';
@@ -2261,7 +2262,6 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       }
       // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
       // Únicamente después de ello borramos el repositorio en GitHub.
-      cloudflareCleaned=true;
       line.textContent='Fotos borradas de Cloudflare. Eliminando el repositorio de GitHub…';
       await validateRepositoryForPermanentDeletion(owner,repo,manifest.nonce,repoData.id);
       try {
