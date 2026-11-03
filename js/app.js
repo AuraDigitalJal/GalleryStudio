@@ -1826,7 +1826,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     try { return await githubRequest(path); } catch (_) { return existing; }
   }
 
-  // Modo de pruebas: solamente se trasladan los archivos resultantes
+  // Integración R2: solamente se trasladan los archivos resultantes
   // del optimizador Aura. La galería visual y el HTML conservan su diseño.
   async function uploadOptimizedAssetsToR2(pkg, repoName, onProgress = () => {}) {
     const uploadInput = $('r2UploadUrl').value.trim();
@@ -1923,7 +1923,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         }
       }, suggestedPublicUrl);
 
-      // Activación opcional solo para pruebas. No modifica el modo GitHub actual.
+      // Activación opcional de R2. El modo tradicional de GitHub permanece disponible.
       let movedToR2 = new Set();
       if ($('r2Enabled').checked) {
         status.textContent = 'Subiendo solamente fotografías optimizadas a Cloudflare R2…';
