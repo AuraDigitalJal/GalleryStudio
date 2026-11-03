@@ -245,7 +245,41 @@
               <label>Token de GitHub <small>Fine-grained recomendado: Contents + Administration + Pages</small><input id="githubToken" type="password" placeholder="github_pat_… o ghp_…"></label>
               <div class="inline-actions"><button type="button" class="btn secondary" id="githubConnect">Conectar GitHub</button><span id="githubAuthStatus">Sin conectar</span></div>
               <label>Repositorio de esta galería<input id="githubRepo" placeholder="boda-mariana-luis"></label>
+              <div class="r2-settings" style="padding:14px;margin:12px 0 16px;border:1px solid #d6c7b6;border-radius:12px;background:#fffaf3">
+                <label class="switch-row" style="display:flex;align-items:center;gap:10px;font-weight:650">
+                  <input type="checkbox" id="r2Enabled" checked>
+                  <span>Cloudflare R2 · subir fotos optimizadas</span>
+                </label>
+                <div id="r2Fields" style="margin-top:12px">
+                  <p class="hint"><strong>R2 está configurado para esta plataforma de pruebas.</strong> No tienes que escribir las direcciones cada vez. Para publicar, introduce tu clave privada de Cloudflare.</p>
+                  <label>Clave privada de Cloudflare R2
+                    <input id="r2PublishKey" type="password" autocomplete="off" placeholder="Escribe aquí la clave que creaste en Cloudflare">
+                  </label>
+                  <details style="margin-top:12px">
+                    <summary style="cursor:pointer;font-weight:600">Ver o cambiar los datos de Cloudflare</summary>
+                    <div style="padding-top:10px">
+                      <label>URL del Worker de Cloudflare
+                        <input id="r2UploadUrl" type="url" inputmode="url" value="https://aura-gallery-r2-upload.visual-arts-jal.workers.dev">
+                      </label>
+                      <label>URL pública de las fotografías
+                        <input id="r2PublicUrl" type="url" inputmode="url" value="https://pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev">
+                      </label>
+                      <small>Ambas direcciones ya están guardadas en esta versión. Solo cámbialas si modificamos Cloudflare.</small>
+                    </div>
+                  </details>
+                  <small>La clave privada se utiliza solo en este navegador. No se incorpora a GitHub ni a las galerías.</small>
+                </div>
+              </div>
               <button type="button" class="btn primary full" id="githubPublish" disabled>Publicar galería</button>
+              <details class="delete-gallery-area" style="margin-top:16px">
+                <summary style="cursor:pointer;color:#806764;font-size:12px">Administrar o eliminar galería publicada</summary>
+                <div style="padding-top:12px">
+                  <p class="hint">Eliminación definitiva: quita la galería, borra sus fotos de Cloudflare R2 y elimina su repositorio completo de GitHub. Se necesita permiso de administrador y confirmación. No se puede deshacer.</p>
+                  <button type="button" class="btn secondary full" id="deleteGallery">Eliminar galería, fotos y repositorio GitHub</button>
+                  <p class="status-line" id="deleteGalleryStatus" aria-live="polite"></p>
+                  <a class="btn secondary full" id="deleteRepoFallback" href="https://github.com/AuraDigitalJal/prueba/settings" target="_blank" rel="noopener noreferrer" hidden>Abrir GitHub para eliminar el repositorio que quedó pendiente</a>
+                </div>
+              </details>
               <div class="publish-progress" id="publishProgress" hidden><progress id="publishBar" value="0" max="1"></progress><span id="publishLabel"></span></div>
               <p id="githubPublishStatus" class="status-line" aria-live="polite"></p>
               <div id="githubPagesActions" class="published-box" hidden>
@@ -269,6 +303,6 @@
       </section>
     </main>
   </div>
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20261102-r2-main-1"></script>
 </body>
 </html>
