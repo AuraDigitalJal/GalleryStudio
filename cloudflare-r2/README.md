@@ -11,7 +11,7 @@ Integración habilitada en la rama principal el 2 de noviembre de 2026.
 - Orígenes autorizados en Worker: `https://auradigitaljal.com` y `https://auradigitaljal.github.io`.
 
 ## Editor
-En **Publicar** se puede dejar Cloudflare activado (predeterminado) o desactivarlo para usar el modo GitHub tradicional. El Worker de subida y el subdominio de lectura comprobado están precargados; pueden revisarse en **Ver o cambiar los datos de Cloudflare**.
+En **Publicar** se puede dejar Cloudflare activado (predeterminado) o desactivarlo para usar el modo GitHub tradicional. Dentro de **Administrar o eliminar galería publicada** hay un botón **Comprobar servicio de eliminación** que consulta `GET /capabilities` sin borrar ningún archivo. El Worker de subida y el subdominio de lectura comprobado están precargados; pueden revisarse en **Ver o cambiar los datos de Cloudflare**.
 La clave privada `GALLERY_PUBLISH_KEY` se introduce al publicar o borrar y jamás debe guardarse en este repositorio, en la galería ni en `config.json`. El token de GitHub también se introduce en el editor, no se publica.
 
 ## Eliminación completa: fotos + repositorio
@@ -44,3 +44,5 @@ El código del Worker se actualiza en el panel de Cloudflare; guardar este archi
 - Gallery Studio v1.4.31 propone por defecto este dominio en nuevas publicaciones R2. Si se realiza un cambio futuro de host, debe verificarse toda galería que ya depende del dominio anterior antes de retirarlo.
 - El sistema de eliminación conjunta ya existía: su operación depende de que el Worker `aura-gallery-r2-upload` tenga desplegado el endpoint `POST /delete-gallery`; el código en GitHub no modifica por sí mismo un Worker publicado.
 - No se ha ejecutado eliminación de una galería real con esta versión; validar `GET /capabilities` con el navegador, antes de dar por hecho que la limpieza está operativa.
+
+**Sobre la caché:** la eliminación de R2 impide futuras lecturas desde el bucket, pero navegadores que descargaron una fotografía previamente pueden conservar copias locales durante el periodo configurado en `Cache-Control`. No se debe prometer revocación de copias que los visitantes ya descargaron.
