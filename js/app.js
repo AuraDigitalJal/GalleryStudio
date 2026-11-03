@@ -1610,6 +1610,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     const refs = [];
     if (state.studioLogo?.file) refs.push({ kind:'logo', id:'logo', file:state.studioLogo.file, previewBlob:state.studioLogo.previewBlob });
     if (state.hero?.file) refs.push({ kind:'hero', id:'hero', file:state.hero.file, previewBlob:state.hero.previewBlob });
+    if (state.shareCustom?.file) refs.push({kind:'socialCustom',id:'socialCustom',file:state.shareCustom.file,previewBlob:state.shareCustom.previewBlob});
     SECTION_DEFS.forEach(([id]) => { const b = state.sections[id].banner; if (b?.file) refs.push({kind:'banner',id,file:b.file,previewBlob:b.previewBlob}); });
     state.photos.forEach(p => refs.push({kind:'photo',id:p.id,file:p.file,previewBlob:p.previewBlob}));
     return refs;
@@ -1620,8 +1621,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       schemaVersion: 1,
       studioVersion: VERSION,
       optimizer: { engine:'Aura Digital v5.6.4', profileKB:state.imageProfile, exactAura500:state.imageProfile===500 },
-      appearance: { style:state.style, coverStyle:state.coverStyle, mobileCoverMode:state.mobileCoverMode, coverBoxOpacity:state.coverBoxOpacity, revealStyle:state.revealStyle, studioName:state.studioName, brandMode:state.brandMode, logoPath:assetRefs.logo || '', accentColor:state.accentColor, backgroundColor:state.backgroundColor, textColor:state.textColor },
-      social: { title:state.shareTitle||'', description:state.shareDescription||'', imageSource:state.shareImageSource||'hero', publicUrl:state.sharePublicUrl||'', imagePath:'og-preview.jpg' },
+      appearance: { style:state.style, coverStyle:state.coverStyle, mobileCoverMode:state.mobileCoverMode, coverBoxOpacity:state.coverBoxOpacity, bannerOverlay:state.bannerOverlay, revealStyle:state.revealStyle, studioName:state.studioName, brandMode:state.brandMode, logoPath:assetRefs.logo || '', accentColor:state.accentColor, backgroundColor:state.backgroundColor, textColor:state.textColor },
+      social: { title:state.shareTitle||'', description:state.shareDescription||'', imageSource:state.shareImageSource||'hero', cropX:state.shareCropX, cropY:state.shareCropY, zoom:state.shareZoom, customPath:assetRefs.socialCustom||'', publicUrl:state.sharePublicUrl||'', imagePath:'og-preview.jpg' },
       event: { title:state.title, date:state.date, heroEyebrow:state.heroEyebrow, subtitle:state.subtitle, description:state.description, heroX:state.heroX, heroY:state.heroY, heroPath:assetRefs.hero || '' },
       sectionOrder: orderedContentIds(),
       sections: SECTION_DEFS.map(([id,fallbackLabel]) => { const s=state.sections[id]; return {id,label:s.label||fallbackLabel,title:s.title,enabled:s.enabled,x:s.x,y:s.y,layout:s.layout||'masonry',highlightsEnabled:!!s.highlightsEnabled,highlightsCount:6,galleryDisplay:s.galleryDisplay==='expanded'?'expanded':'manual',bannerPath:assetRefs.banners[id]||''}; }),
@@ -1633,7 +1634,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
   }
 
   async function buildPackage(onProgress = () => {}, preferredPublicUrl = '') {
-    const refs = collectMedia(), assetRefs = { logo:'', hero:'', banners:{}, photos:{}, music:'' }, assets = [], hashToPath = new Map();
+    const refs = collectMedia(), assetRefs = { logo:'', hero:'', banners:{}, photos:{}, socialCustom:'', music:'' }, assets = [], hashToPath = new Map();
     let originalTotal = 0, finalTotal = 0, optimizedCount = 0, keptCount = 0, fallbackLarge = 0;
     for (let i = 0; i < refs.length; i++) {
       const ref = refs[i]; originalTotal += ref.file.size;
@@ -1663,6 +1664,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       if (!path) { path = `assets/img-${String(assets.length + 1).padStart(3,'0')}${out.ext}`; hashToPath.set(hash,path); assets.push({path,blob:out.blob,size:out.finalSize,sourceName:ref.file.name}); }
       if (ref.kind === 'logo') assetRefs.logo = path;
       else if (ref.kind === 'hero') assetRefs.hero = path;
+      else if (ref.kind === 'socialCustom') assetRefs.socialCustom = path;
       else if (ref.kind === 'banner') assetRefs.banners[ref.id] = path;
       else assetRefs.photos[ref.id] = path;
       onProgress({stage:'optimize', current:i+1, total:refs.length, name:ref.file.name});
@@ -2283,8 +2285,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
   }
   async function applyConfig(config, configUrl = null) {
     const a=config.appearance||{},e=config.event||{};
-    state.style=a.style||'organic';state.coverStyle=['classic','centered','split','fineart'].includes(a.coverStyle)?a.coverStyle:'classic';state.mobileCoverMode=['mixed','horizontal','adaptive'].includes(a.mobileCoverMode)?a.mobileCoverMode:'mixed';state.coverBoxOpacity=clamp(a.coverBoxOpacity??91,0,100);state.revealStyle=['soft','editorial','none'].includes(a.revealStyle)?a.revealStyle:'soft';state.studioName=a.studioName??'Nuestra Historia';state.brandMode=a.brandMode==='logo'?'logo':'text';state.accentColor=a.accentColor||'#a58d63';state.backgroundColor=a.backgroundColor||'#f5f2ec';state.textColor=a.textColor||'#2f2c28';
-    state.title=e.title||'';state.date=e.date||'';state.shareTitle=config.social?.title||'';state.shareDescription=config.social?.description||'';state.shareImageSource=config.social?.imageSource||'hero';state.sharePublicUrl=config.social?.publicUrl||'';state.heroEyebrow=e.heroEyebrow??'NUESTRA HISTORIA';state.subtitle=e.subtitle||'';state.description=e.description||'';state.heroX=e.heroX??50;state.heroY=e.heroY??50;
+    state.style=a.style||'organic';state.coverStyle=['classic','centered','split','fineart'].includes(a.coverStyle)?a.coverStyle:'classic';state.mobileCoverMode=['mixed','horizontal','adaptive'].includes(a.mobileCoverMode)?a.mobileCoverMode:'mixed';state.coverBoxOpacity=clamp(a.coverBoxOpacity??91,0,100);state.bannerOverlay=clamp(a.bannerOverlay??50,0,100);state.revealStyle=['soft','editorial','none'].includes(a.revealStyle)?a.revealStyle:'soft';state.studioName=a.studioName??'Nuestra Historia';state.brandMode=a.brandMode==='logo'?'logo':'text';state.accentColor=a.accentColor||'#a58d63';state.backgroundColor=a.backgroundColor||'#f5f2ec';state.textColor=a.textColor||'#2f2c28';
+    state.title=e.title||'';state.date=e.date||'';state.shareTitle=config.social?.title||'';state.shareDescription=config.social?.description||'';state.shareImageSource=config.social?.imageSource||'hero';state.shareCropX=clamp(config.social?.cropX??50,0,100);state.shareCropY=clamp(config.social?.cropY??50,0,100);state.shareZoom=clamp(config.social?.zoom??100,100,250);state.sharePublicUrl=config.social?.publicUrl||'';state.heroEyebrow=e.heroEyebrow??'NUESTRA HISTORIA';state.subtitle=e.subtitle||'';state.description=e.description||'';state.heroX=e.heroX??50;state.heroY=e.heroY??50;
     const configuredOrder = Array.isArray(config.sectionOrder) ? config.sectionOrder : (Array.isArray(config.sections) ? config.sections.map(x=>x.id) : []);
     const validContentIds = [...SECTION_DEFS.map(([id])=>id), 'videos'];
     state.sectionOrder = configuredOrder.filter(id=>validContentIds.includes(id));
@@ -2295,11 +2297,13 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     if(state.studioLogo?.previewUrl&&previewUrls.has(state.studioLogo.previewUrl)){URL.revokeObjectURL(state.studioLogo.previewUrl);previewUrls.delete(state.studioLogo.previewUrl)}state.studioLogo=null;
     if(state.music?.previewUrl&&previewUrls.has(state.music.previewUrl)){URL.revokeObjectURL(state.music.previewUrl);previewUrls.delete(state.music.previewUrl)}state.music=null;
     if(state.hero?.previewUrl&&previewUrls.has(state.hero.previewUrl)){URL.revokeObjectURL(state.hero.previewUrl);previewUrls.delete(state.hero.previewUrl)}state.hero=null;
+    if(state.shareCustom?.previewUrl&&previewUrls.has(state.shareCustom.previewUrl)){URL.revokeObjectURL(state.shareCustom.previewUrl);previewUrls.delete(state.shareCustom.previewUrl)}state.shareCustom=null;
     state.photos.forEach(p=>{if(p.previewUrl&&previewUrls.has(p.previewUrl)){URL.revokeObjectURL(p.previewUrl);previewUrls.delete(p.previewUrl)}});state.photos=[];
     if(configUrl){
       const base=new URL('.',configUrl).href;const jobs=[];
       if(a.logoPath)jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(a.logoPath,base).href,a.logoPath.split('/').pop());replaceStateLogo(await createLogoMediaRecord(f,1400));});
       if(config.music?.path)jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(config.music.path,base).href,config.music.name||config.music.path.split('/').pop());replaceStateMusic(f);const fallback=guessTrackInfo(f.name);state.musicTitle=state.musicTitle||fallback.title;state.musicArtist=state.musicArtist||fallback.artist;await updateTrackFromTags(f,true);});
+      if(config.social?.customPath)jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(config.social.customPath,base).href,'miniatura-especial.jpg');replaceMedia(state,'shareCustom',await createMediaRecord(f,2000));});
       if(e.heroPath)jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(e.heroPath,base).href,e.heroPath.split('/').pop());replaceStateHero(await createMediaRecord(f,2000));});
       for(const c of config.sections||[]){if(c.bannerPath&&state.sections[c.id])jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(c.bannerPath,base).href,c.bannerPath.split('/').pop());state.sections[c.id].banner=await createMediaRecord(f,1900);});}
       for(const p of config.photos||[]){if(!p.path)continue;jobs.push(async()=>{const f=await fetchAssetAsFile(new URL(p.path,base).href,p.name||p.path.split('/').pop());const media=await createMediaRecord(f,1600);state.photos.push({id:p.id||`p${++photoSeq}`,file:f,previewUrl:media.previewUrl,previewBlob:media.previewBlob,width:media.width||p.width||0,height:media.height||p.height||0,section:p.section||'getting-ready',focusX:p.focusX??50,focusY:p.focusY??50,fit:p.fit==='contain'?'contain':'cover'});});}
@@ -2308,7 +2312,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     syncFormFromState();buildSectionEditor();buildTargetOptions();renderPhotoList();schedulePreview('',true);
   }
   function syncFormFromState(){
-    $('galleryStyle').value=state.style;$('coverStyle').value=state.coverStyle;$('mobileCoverMode').value=state.mobileCoverMode;$('coverBoxOpacity').value=state.coverBoxOpacity;$('coverBoxOpacityOut').value=`${state.coverBoxOpacity}%`;$('revealStyle').value=state.revealStyle;$('studioName').value=state.studioName;$('brandMode').value=state.brandMode;$('accentColor').value=state.accentColor;$('backgroundColor').value=state.backgroundColor;$('textColor').value=state.textColor;
+    $('galleryStyle').value=state.style;$('coverStyle').value=state.coverStyle;$('mobileCoverMode').value=state.mobileCoverMode;$('coverBoxOpacity').value=state.coverBoxOpacity;$('coverBoxOpacityOut').value=`${state.coverBoxOpacity}%`;$('bannerOverlay').value=state.bannerOverlay;$('bannerOverlayOut').value=`${state.bannerOverlay}%`;$('shareCustomFileName').textContent=state.shareCustom?.file?.name||'Selecciona una imagen especial';$('revealStyle').value=state.revealStyle;$('studioName').value=state.studioName;$('brandMode').value=state.brandMode;$('accentColor').value=state.accentColor;$('backgroundColor').value=state.backgroundColor;$('textColor').value=state.textColor;
     $('shareTitle').value=state.shareTitle||'';$('shareDescription').value=state.shareDescription||'';$('sharePublicUrl').value=state.sharePublicUrl||'';refreshSharePreview();
     $('heroEyebrow').value=state.heroEyebrow??'';$('eventTitle').value=state.title;$('eventDate').value=state.date;$('eventSubtitle').value=state.subtitle;$('eventDescription').value=state.description;$('heroX').value=state.heroX;$('heroY').value=state.heroY;$('heroXOut').value=`${state.heroX}%`;$('heroYOut').value=`${state.heroY}%`;$('heroFileName').textContent=state.hero?.file?.name||'Selecciona una fotografía horizontal';
     updateBrandEditor();$('musicFileName').textContent=state.music?.file?.name||'Selecciona MP3, M4A, AAC u OGG';$('musicLoop').checked=state.musicLoop!==false;$('musicPlayerVisible').checked=state.musicPlayerVisible!==false;$('musicTitle').value=state.musicTitle||'';$('musicArtist').value=state.musicArtist||'';$('downloadEnabled').checked=!!state.downloadEnabled;$('downloadUrl').value=state.downloadUrl||'';$('videosEnabled').checked=state.videosEnabled;$('videosEyebrow').value=state.videosEyebrow;$('videosTitle').value=state.videosTitle;$('video1').value=state.video1;$('video1Label').value=state.video1Label;$('video2').value=state.video2;$('video2Label').value=state.video2Label;document.querySelector(`input[name="imageProfile"][value="${state.imageProfile}"]`).checked=true;
