@@ -56,6 +56,7 @@
                   <option value="fineart">Fine Art</option>
                   <option value="magazine">Revista editorial</option>
                   <option value="dark">Editorial oscuro</option>
+                  <option value="signature">Aura Signature · Editorial premium (prueba)</option>
                 </select>
                 <small>El diseño cambia portada, banners y ritmo visual. El acomodo de fotos se decide por separado en cada capítulo.</small>
               </label>
@@ -139,12 +140,23 @@
                 <label>Fotografía para la miniatura
                   <select id="shareImageSource"><option value="hero">Portada principal (automático)</option></select>
                 </label>
-                <div class="share-image-preview" id="shareImagePreview" aria-label="Fotografía elegida para la miniatura"><img id="sharePreviewImg" alt="Vista de la fotografía para compartir" hidden><span id="sharePreviewPlaceholder">La portada aparecerá aquí al cargarla.</span></div>
+                <label class="file-field">Imagen especial para miniatura
+                  <input id="shareCustomFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
+                  <span id="shareCustomFileName">Selecciona una imagen exclusiva para compartir</span>
+                  <small>La imagen especial solo aparece en WhatsApp/Facebook. No altera la portada ni el álbum.</small>
+                </label>
+                <div class="field-grid two">
+                  <label>Encuadre horizontal <output id="shareCropXOut">50%</output><input id="shareCropX" type="range" min="0" max="100" value="50"></label>
+                  <label>Encuadre vertical <output id="shareCropYOut">50%</output><input id="shareCropY" type="range" min="0" max="100" value="50"></label>
+                </div>
+                <label>Acercamiento <output id="shareZoomOut">100%</output><input id="shareZoom" type="range" min="100" max="250" value="100"><small>Vista previa exacta del recorte que se exportará a 1200 × 630.</small></label>
+                <div class="share-image-preview" id="shareImagePreview" aria-label="Previsualización de la miniatura"><canvas id="sharePreviewCanvas" width="1200" height="630" hidden></canvas><span id="sharePreviewPlaceholder">La portada aparecerá aquí al cargarla.</span></div>
                 <label>Dirección pública de la galería <small>Opcional. Para publicar en GitHub se detecta automáticamente; indícala si usas dominio personalizado o subirás el ZIP por tu cuenta.</small>
                   <input id="sharePublicUrl" type="url" placeholder="https://tudominio.com/tu-galeria/" inputmode="url">
                 </label>
                 <small>WhatsApp y Facebook pueden tardar en actualizar las miniaturas que ya hayan guardado en caché.</small>
               </div>
+              <label>Intensidad de degradado de portada y banners · Aura Signature <output id="bannerOverlayOut">50%</output><input id="bannerOverlay" type="range" min="0" max="100" value="50"><small>0% muestra la foto sin oscurecer; 100% es el degradado completo. Solo afecta Aura Signature.</small></label>
               <label>Apoyo de lectura sobre portada <output id="coverBoxOpacityOut">91%</output><input id="coverBoxOpacity" type="range" min="0" max="100" value="91"><small>Controla solo la intensidad del degradado detrás del texto en los estilos que lo necesitan. Ya no crea rectángulos encima de la fotografía.</small></label>
               <p class="hint">En escritorio la portada conserva 16:7. En móvil puedes dejar que cada diseño decida, conservar deliberadamente el marco horizontal o usar una composición adaptada.</p>
             </div>
