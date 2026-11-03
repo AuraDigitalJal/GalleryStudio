@@ -1,0 +1,34 @@
+# Aura Digital · Monitoreo Cloudflare
+
+Herramienta de consulta **solo lectura** de Cloudflare R2 y Workers, agregada a `GalleryStudio` sin alterar sus galerías ni su sitio web.
+
+## Activación (en este mismo repositorio)
+
+1. Abre **Settings → Secrets and variables → Actions**.
+2. En **Secrets**, crea `CLOUDFLARE_API_TOKEN` y pega ahí el token de Cloudflare con permiso **Account → Account Analytics → Read**. **Nunca lo escribas en el código ni en un archivo de GitHub**. Como el token anterior se compartió en un chat, se recomienda revocarlo y crear uno nuevo.
+3. En **Variables**, crea `CLOUDFLARE_ACCOUNT_ID` y coloca el identificador de tu cuenta de Cloudflare (no el bucket).
+4. En **Actions**, elige **Aura Digital - Monitoreo Cloudflare**, pulsa **Run workflow** para probarlo.
+5. Consulta el resumen del trabajo y descarga el archivo **aura-cloudflare-reporte**. El archivo contiene `RESUMEN.md` y `ultimo.json`.
+
+Se ejecuta automáticamente cada día a las **14:15 UTC / 08:15 hora de Jalisco**. GitHub puede retrasar trabajos programados.
+
+## Qué mide
+
+- Bucket R2 `aura-galerias`: almacenamiento actual (última muestra), número de objetos, operaciones de clase A/B y transferencia contabilizada durante el mes UTC.
+- Worker `aura-gallery-r2-upload`: solicitudes y errores del mes UTC, cuando están disponibles.
+- Avisos orientativos cuando una de las referencias llegue a 70%, 85% o 95% (visibles en el reporte, **no son notificaciones automáticas**).
+
+Los datos se muestran como un **resumen de GitHub Actions y un artefacto que caduca en 30 días**. No se realizan commits diarios, de modo que no se dispara el despliegue de GitHub Pages por nuevos reportes. No se accede a fotografías ni se muestran nombres o rutas de objetos.
+
+**Importante:** el repositorio `GalleryStudio` es público y los resúmenes o artefactos de Actions podrían ser visibles para otras personas. El informe contiene solo cifras globales; **nunca** el token ni el Account ID. Si se necesitara confidencialidad absoluta de estas cifras, sería preferible un repositorio privado.
+
+Los límites de Cloudflare R2 gratuitos son a nivel cuenta y la cifra de espacio actual no equivale al consumo medio facturable en GB-mes. El tráfico R2 puede omitir transferencias de menos de 100 KiB; las solicitudes no representan visitas únicas.
+
+## Si algo falla
+
+- `Monitoreo pendiente de configurar`: falta el secret o la variable.
+- Error `HTTP 403`: revisar el permiso Analytics Read y que el token tenga acceso a la cuenta correcta.
+- `sin muestra`: esperar a que Cloudflare actualice sus estadísticas.
+- `Worker no disponible`: el reporte de R2 seguirá funcionando.
+
+Consulta el [manual oficial de métricas R2](https://developers.cloudflare.com/r2/platform/metrics-analytics/) y la [documentación de secretos de GitHub](https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions).
