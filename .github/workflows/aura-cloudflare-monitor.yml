@@ -19,6 +19,9 @@ jobs:
       - name: Obtener archivos
         uses: actions/checkout@v4
 
+      - name: Verificar monitor sin credenciales
+        run: python3 -m unittest discover -s cloudflare-monitor/tests -v
+
       - name: Obtener metricas (sin modificar R2)
         id: monitor
         shell: bash
