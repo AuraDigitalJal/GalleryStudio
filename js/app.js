@@ -2119,6 +2119,20 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     'fotos.auradigitaljal.com',
     'pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev'
   ]);
+  async function checkGalleryDeletionReady() {
+    const button=$('checkDeleteReady'),line=$('checkDeleteReadyStatus');
+    if(!button||!line||button.disabled)return;
+    button.disabled=true;
+    line.textContent='Comprobando servicio de Cloudflare…';
+    try {
+      await requireGalleryDeletionAvailable();
+      line.textContent='Cloudflare confirma que el servicio admite borrado. No se eliminó ninguna fotografía. Para borrar una galería se requieren GitHub, clave R2 y doble confirmación.';
+    } catch(error) {
+      line.textContent='La eliminación no está disponible: '+(error?.message||String(error))+'. No se borró nada.';
+    } finally {
+      button.disabled=false;
+    }
+  }
   function assertGalleryPathsMatchR2(config,repo) {
     if(config.schemaVersion!==1||!Array.isArray(config.photos)||config.photos.length<1)
       throw new Error('Este repositorio no parece una galería compatible; se detuvo el borrado.');
@@ -2349,6 +2363,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     $('photoOrderMode').addEventListener('change',()=>{if($('photoOrderMode').value==='name'){state.photos.sort((a,b)=>a.file.name.localeCompare(b.file.name,'es',{numeric:true}));renderPhotoList();schedulePreview();}});
     $('loadConfigUrl').addEventListener('click',loadConfigFromUrl);$('localConfig').addEventListener('change',e=>loadLocalConfig(e.target.files?.[0]));
     $('r2Enabled').addEventListener('change', () => { $('r2Fields').hidden = !$('r2Enabled').checked; });
+    $('checkDeleteReady').addEventListener('click',checkGalleryDeletionReady);
     $('deleteGallery').addEventListener('click',deleteGalleryAndR2);
     $('githubConnect').addEventListener('click',connectGitHub);$('githubPublish').addEventListener('click',publishGitHub);$('copyPublicUrl').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('githubPagesUrl').value);$('githubPublishStatus').textContent='Enlace copiado.'}catch(_){}});
     addEventListener('beforeunload',()=>{previewUrls.forEach(u=>URL.revokeObjectURL(u));try{detachedPreviewWindow?.close()}catch(_){}});
