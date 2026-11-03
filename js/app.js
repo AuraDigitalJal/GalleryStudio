@@ -1707,11 +1707,13 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       $('githubAuthStatus').textContent = `Conectado: @${githubUser.login}`;
       if (!$('githubRepo').value.trim()) $('githubRepo').value = sanitizeFilePart(state.title);
       $('githubPublish').disabled = false;
+      $('deleteGallery').disabled = false;
       return true;
     } catch (e) {
       githubUser = null;
       $('githubAuthStatus').textContent = `Error: ${githubFriendlyError(e)}`;
       $('githubPublish').disabled = true;
+      $('deleteGallery').disabled = false;
       return false;
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = old; }
@@ -1824,6 +1826,81 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     try { return await githubRequest(path); } catch (_) { return existing; }
   }
 
+  // Modo de pruebas: solamente se trasladan los archivos resultantes
+  // del optimizador Aura. La galería visual y el HTML conservan su diseño.
+  async function uploadOptimizedAssetsToR2(pkg, repoName, onProgress = () => {}) {
+    const uploadInput = $('r2UploadUrl').value.trim();
+    const publicInput = $('r2PublicUrl').value.trim();
+    const secret = $('r2PublishKey').value.trim();
+    const parseHttps = (raw, label) => {
+      let url; try { url = new URL(raw); } catch (_) { throw new Error('Escribe una URL válida para ' + label + '.'); }
+      if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+        throw new Error(label + ' debe ser una URL HTTPS sin credenciales ni parámetros.');
+      }
+      return url;
+    };
+    const uploadBase = parseHttps(uploadInput, 'Worker R2');
+    const publicBase = parseHttps(publicInput, 'dominio público de R2');
+    if (!secret) throw new Error('Falta la clave de publicación R2.');
+
+    // Incluye también portada, banners y logo cuando el optimizador les haya
+    // asignado una ruta img-XXX, sin subir archivos originales de varios MB.
+    const imagePattern = /^assets\/img-\d{3,5}\.(?:jpe?g|png|webp|gif)$/i;
+    const images = pkg.assets.filter(a => imagePattern.test(a.path));
+    const maxBytes = profileSettings(state.imageProfile).max;
+    const invalid = images.find(a => a.size > maxBytes);
+    if (invalid) {
+      throw new Error('No se subió a R2 «' + invalid.sourceName + '»: supera el límite de ' + Math.ceil(maxBytes/1024) + ' KB del perfil actual. Convierte esta imagen a JPEG/WebP o vuelve a seleccionarla.');
+    }
+    const replacements = new Map();
+    let next = 0, done = 0;
+    const workers = Array.from({length:Math.min(4,images.length)}, async () => {
+      while (next < images.length) {
+        const a = images[next++];
+        const digest = await sha256Hex(a.blob);
+        const name = a.path.replace(/\.([^.]+)$/, '-' + digest.slice(0,16) + '.$1');
+        const key = 'galerias/' + repoName + '/' + name;
+        const target = new URL('/upload/' + key, uploadBase).href;
+        const publicUrl = new URL('/' + key, publicBase).href;
+        const contentType = a.blob.type || ({
+          jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif'
+        })[a.path.split('.').pop().toLowerCase()];
+        let response;
+        try {
+          response = await fetch(target, {
+            method:'PUT',
+            headers:{'Authorization':'Bearer ' + secret,'Content-Type':contentType},
+            body:a.blob
+          });
+        } catch (e) {
+          throw new Error('No se pudo conectar con Cloudflare R2 para «' + a.sourceName + '». Comprueba Worker y CORS. ' + (e?.message||''));
+        }
+        if (!response.ok) {
+          const message = await response.text().catch(()=> '');
+          throw new Error('Cloudflare R2 rechazó «' + a.sourceName + '» (' + response.status + '). ' + message.slice(0,240));
+        }
+        replacements.set(a.path, publicUrl);
+        done++;
+        onProgress(done, images.length);
+      }
+    });
+    await Promise.all(workers);
+
+    // Paths absolutos en el HTML y config.json; el sistema de recuperación
+    // admite URLs absolutas mediante new URL(path,base).
+    let indexHtml = pkg.indexHtml, configText = pkg.configText;
+    for (const [relative,absolute] of replacements) {
+      indexHtml = indexHtml.split(relative).join(absolute);
+      configText = configText.split(relative).join(absolute);
+    }
+    return {
+      indexHtml,
+      configText,
+      moved: new Set(replacements.keys()),
+      count: replacements.size
+    };
+  }
+
   async function publishGitHub() {
     if (!githubUser) { const ok = await connectGitHub(); if (!ok || !githubUser) return; }
     const repoName = sanitizeFilePart($('githubRepo').value || state.title);
@@ -1846,6 +1923,20 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         }
       }, suggestedPublicUrl);
 
+      // Activación opcional solo para pruebas. No modifica el modo GitHub actual.
+      let movedToR2 = new Set();
+      if ($('r2Enabled').checked) {
+        status.textContent = 'Subiendo solamente fotografías optimizadas a Cloudflare R2…';
+        const r2 = await uploadOptimizedAssetsToR2(pkg, repoName, (done,total) => {
+          bar.value = .5 + .03*(total ? done/total : 1);
+          label.textContent = 'Cloudflare R2: ' + done + '/' + total + ' fotos';
+        });
+        pkg.indexHtml = r2.indexHtml;
+        pkg.configText = r2.configText;
+        movedToR2 = r2.moved;
+        status.textContent = r2.count + ' archivos optimizados alojados en R2.';
+      }
+
       status.textContent = 'Revisando repositorio…'; bar.value = .53; label.textContent = 'Conectando con GitHub';
       const { repo, created } = await ensureRepo(githubUser.login, repoName);
       const owner = githubUser.login;
@@ -1861,7 +1952,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
         { path: 'config.json', base64: textToBase64(pkg.configText) },
         { path: '.nojekyll', base64: textToBase64('') }
       ];
-      for (const a of pkg.assets) files.push({ path: a.path, base64: await blobToBase64(a.blob) });
+      for (const a of pkg.assets) {
+        if (!movedToR2.has(a.path)) files.push({ path: a.path, base64: await blobToBase64(a.blob) });
+      }
 
       const entries = new Array(files.length); let done = 0, next = 0;
       const workers = Array.from({ length: Math.min(4, files.length) }, async () => {
@@ -1915,6 +2008,176 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       btn.disabled = !githubUser;
       if (btn.textContent === 'Publicando…') btn.textContent = oldLabel;
     }
+  }
+
+  // Borrado coordinado: primero retirar la galería de GitHub Pages,
+  // después limpiar exclusivamente su prefijo en Cloudflare R2.
+  // El repositorio GitHub sigue existiendo como registro, pero su página
+  // publicada ya no contiene fotos. Se permite reintentar si R2 falla.
+  async function readGitHubJsonFile(owner,repo,file) {
+    const payload=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/contents/'+file+'?ref=main');
+    if(payload.encoding!=='base64'||!payload.content) throw new Error('GitHub no entregó '+file+'.');
+    const encoded=payload.content.replace(/\s/g,'');
+    const bytes=Uint8Array.from(atob(encoded),char=>char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  async function requireGalleryDeletionAvailable() {
+    const base = String($('r2UploadUrl').value||'').trim();
+    const url = new URL('/capabilities',base);
+    const response=await fetch(url.href,{cache:'no-store'});
+    if(!response.ok) throw new Error('La eliminación conjunta aún no está activada en Cloudflare. No se ha borrado nada.');
+    const capabilities=await response.json();
+    if(capabilities.deleteGallery!==true)
+      throw new Error('El Worker de Cloudflare todavía no admite eliminación conjunta. No se ha borrado nada.');
+  }
+  function assertGalleryPathsMatchR2(config,repo) {
+    if(config.schemaVersion!==1||!Array.isArray(config.photos)||config.photos.length<1)
+      throw new Error('Este repositorio no parece una galería compatible; se detuvo el borrado.');
+    const publicHost=new URL($('r2PublicUrl').value).host;
+    const prefix='/galerias/'+repo+'/assets/';
+    for (const photo of config.photos) {
+      let url;
+      try{url=new URL(photo.path);}catch(_){throw new Error('La galería tiene fotos fuera de R2; no se ha borrado nada.');}
+      if(url.protocol!=='https:'||url.host!==publicHost||!url.pathname.startsWith(prefix))
+        throw new Error('La galería contiene imágenes fuera de Cloudflare R2; se detuvo para no borrar fotografías equivocadas.');
+    }
+  }
+  // Borrar el repositorio solo si quedó exactamente el marcador de baja.
+  // Impide borrar otras páginas de Aura Digital con el mismo nombre.
+  async function validateRepositoryForPermanentDeletion(owner,repo,nonce,expectedId) {
+    const base='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
+    const metadata=await githubRequest(base);
+    if(String(metadata.id)!==String(expectedId)||metadata.default_branch!=='main')
+      throw new Error('Cambió la identidad de la galería en GitHub. Se detuvo el borrado final.');
+    const manifest=await readGitHubJsonFile(owner,repo,'aura-deleted.json');
+    if(manifest.schemaVersion!==1||manifest.status!=='deleted'||manifest.gallery!==repo||
+       manifest.storagePrefix!=='galerias/'+repo+'/'||manifest.nonce!==nonce)
+      throw new Error('No coincide el comprobante de eliminación de GitHub.');
+    const files=await githubRequest(base+'/contents/?ref=main');
+    const expected=new Set(['.nojekyll','index.html','aura-deleted.json']);
+    if(!Array.isArray(files)||files.length!==3||files.some(f=>f.type!=='file'||!expected.has(f.name)))
+      throw new Error('El repositorio tiene archivos adicionales. Se conservó por seguridad.');
+    const page=await githubRequest(base+'/contents/index.html?ref=main');
+    const bytes=Uint8Array.from(atob(String(page.content||'').replace(/\s/g,'')),c=>c.charCodeAt(0));
+    const html=new TextDecoder().decode(bytes);
+    if(!html.includes('<title>Galería no disponible</title>')||!html.includes('Esta galería ya no está disponible'))
+      throw new Error('La página del repositorio ya no es el aviso de baja. Se conservó por seguridad.');
+  }
+  async function deleteGalleryAndR2() {
+    const btn=$('deleteGallery'),line=$('deleteGalleryStatus');
+    const direct=$('deleteRepoFallback');
+    if(!btn||btn.disabled)return;
+    if(direct)direct.hidden=true;
+    btn.disabled=true;line.textContent='Comprobando permisos…';
+    let cloudflareCleaned=false;
+    try {
+      if(!githubUser){const connected=await connectGitHub();if(!connected)throw new Error('Conecta GitHub primero.');}
+      // Solo galería con slug explícito, nunca el repositorio principal de Aura.
+      const owner=githubUser.login,repo=sanitizeFilePart($('githubRepo').value||'');
+      if(owner.toLowerCase()!=='auradigitaljal')
+        throw new Error('Este borrado está disponible solo para galerías del GitHub de Aura Digital.');
+      if(!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])$/.test(repo)
+        || ['auradigitaljal-github-io','auraplataforma55','gallerystudio','aurawebstudio'].includes(repo))
+        throw new Error('Selecciona un repositorio válido de galería. No se puede eliminar la plataforma principal.');
+      await requireGalleryDeletionAvailable();
+      const publishKey=$('r2PublishKey').value.trim();
+      if(!publishKey)throw new Error('Primero escribe la clave privada de Cloudflare R2. No se ha borrado nada.');
+      // Evitamos eliminar repositorios externos o equivocados.
+      const repoData=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo));
+      if(repoData.default_branch!=='main')throw new Error('La galería debe estar en su rama main.');
+      if(direct)direct.href='https://github.com/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/settings';
+      let prior=null,alreadyRetired=false;
+      try {
+        prior=await readGitHubJsonFile(owner,repo,'aura-deleted.json');
+        alreadyRetired=prior?.schemaVersion===1&&prior?.status==='deleted'
+          &&prior?.gallery===repo&&prior?.storagePrefix==='galerias/'+repo+'/'
+          &&/^[a-f0-9]{32}$/.test(prior?.nonce||'');
+      } catch(error) { if(error?.status!==404)throw error; }
+      if(!alreadyRetired) {
+        const config=await readGitHubJsonFile(owner,repo,'config.json');
+        assertGalleryPathsMatchR2(config,repo);
+      }
+      const expected='ELIMINAR '+repo;
+      const typed=window.prompt('Se borrarán la galería, sus fotografías de Cloudflare y TODO su repositorio de GitHub. Escribe exactamente:\n'+expected);
+      if(typed!==expected){line.textContent='Cancelado. No se borró nada.';return;}
+      if(!window.confirm('¿Confirmas ELIMINAR DEFINITIVAMENTE la galería «'+repo+'», sus fotos de R2 y TODO el repositorio en GitHub? No hay deshacer.')){
+        line.textContent='Cancelado. No se borró nada.';return;
+      }
+      let manifest=prior;
+      if(!alreadyRetired) {
+        const nonce=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+        manifest={schemaVersion:1,status:'deleted',gallery:repo,storagePrefix:'galerias/'+repo+'/',nonce,deletedAt:new Date().toISOString()};
+        line.textContent='Preparando eliminación segura en GitHub sin retirar todavía la galería…';
+        const gitBase='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
+        // Solo se publica el manifiesto, sin tocar todavía index.html.
+        // El Worker de R2 valida este comprobante antes de borrar sus fotos.
+        await githubRequest(gitBase+'/contents/aura-deleted.json',{
+          method:'PUT',
+          body:JSON.stringify({
+            message:'Preparar limpieza segura de fotos R2 de '+repo,
+            content:btoa(JSON.stringify(manifest,null,2))
+          })
+        });
+      }
+      // La misma clave utilizada para publicar autoriza la limpieza, pero
+      // Cloudflare comprueba también que GitHub tenga el manifiesto exacto.
+
+      line.textContent='Solicitando a Cloudflare eliminar todas las fotos de esta galería…';
+      let response,data;
+      // GitHub puede tardar unos segundos en mostrar el comprobante nuevo.
+      // No retirar la página ni el repo mientras R2 no confirme éxito.
+      for (let attempt=0;attempt<4;attempt++) {
+        response=await fetch(new URL('/delete-gallery',$('r2UploadUrl').value).href,{
+          method:'POST',headers:{'Authorization':'Bearer '+publishKey,'Content-Type':'application/json'},
+          body:JSON.stringify({gallery:repo,nonce:manifest.nonce}),
+          cache:'no-store'
+        });
+        data=await response.json().catch(()=>({message:'Respuesta no válida de Cloudflare'}));
+        if (response.ok && data.ok===true) break;
+        if (response.status!==409 || attempt===3) break;
+        line.textContent='Esperando que GitHub confirme la autorización de limpieza ('+(attempt+1)+'/3)…';
+        await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+      }
+      if(!response.ok||data.ok!==true)
+        throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
+      // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
+      if(!alreadyRetired) {
+        line.textContent='Cloudflare confirmó el borrado. Retirando la página pública…';
+        const gitBase='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
+        const head=await githubRequest(gitBase+'/git/ref/heads/main');
+        const parentSha=head?.object?.sha;
+        if(!parentSha)throw new Error('GitHub no entregó la rama principal.');
+        const tombstone='<!doctype html><html lang="es"><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Galería no disponible</title><body style="font:16px system-ui;text-align:center;padding:12vh 16px;color:#333"><h1>Esta galería ya no está disponible</h1><p>El periodo de publicación ha finalizado.</p></body></html>';
+        const tree=await githubRequest(gitBase+'/git/trees',{method:'POST',body:JSON.stringify({tree:[
+          {path:'index.html',mode:'100644',type:'blob',content:tombstone},
+          {path:'aura-deleted.json',mode:'100644',type:'blob',content:JSON.stringify(manifest,null,2)},
+          {path:'.nojekyll',mode:'100644',type:'blob',content:''}
+        ]})});
+        const commit=await githubRequest(gitBase+'/git/commits',{method:'POST',body:JSON.stringify({
+          message:'Retirar galería '+repo+' y autorizar limpieza R2',tree:tree.sha,parents:[parentSha]
+        })});
+        await githubRequest(gitBase+'/git/refs/heads/main',{method:'PATCH',body:JSON.stringify({sha:commit.sha,force:false})});
+      }
+      // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
+      // Únicamente después de ello borramos el repositorio en GitHub.
+      cloudflareCleaned=true;
+      line.textContent='Fotos borradas de Cloudflare. Eliminando el repositorio de GitHub…';
+      await validateRepositoryForPermanentDeletion(owner,repo,manifest.nonce,repoData.id);
+      try {
+        await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo),{method:'DELETE'});
+      } catch (githubDeleteError) {
+        if (githubDeleteError?.status===403||githubDeleteError?.status===401)
+          throw new Error('Las fotos YA se borraron de Cloudflare. GitHub no autorizó eliminar el repositorio: el token debe tener Administración (lectura y escritura) o delete_repo. Corrige el permiso y vuelve a pulsar Eliminar.');
+        throw new Error('Las fotos YA se borraron de Cloudflare, pero faltó borrar el repositorio de GitHub: '+(githubDeleteError.message||githubDeleteError));
+      }
+      line.textContent='Eliminación completa: fotografías de Cloudflare y repositorio de GitHub borrados definitivamente.';
+      $('githubPagesActions').hidden=true;
+      $('githubPublishStatus').textContent='Galería, fotografías y repositorio eliminados.';
+    }catch(error){
+      console.error('No se completó eliminación conjunta',error);
+      line.textContent=(cloudflareCleaned?'Cloudflare confirmó que las fotos fueron eliminadas. GitHub aún conserva el repositorio. ':'Atención: ')+(error.message||String(error));
+      if(direct && cloudflareCleaned)direct.hidden=false;
+    }finally{btn.disabled=false;}
   }
 
   function normalizeConfigUrl(input) {
@@ -1982,6 +2245,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }));
     $('photoOrderMode').addEventListener('change',()=>{if($('photoOrderMode').value==='name'){state.photos.sort((a,b)=>a.file.name.localeCompare(b.file.name,'es',{numeric:true}));renderPhotoList();schedulePreview();}});
     $('loadConfigUrl').addEventListener('click',loadConfigFromUrl);$('localConfig').addEventListener('change',e=>loadLocalConfig(e.target.files?.[0]));
+    $('r2Enabled').addEventListener('change', () => { $('r2Fields').hidden = !$('r2Enabled').checked; });
+    $('deleteGallery').addEventListener('click',deleteGalleryAndR2);
     $('githubConnect').addEventListener('click',connectGitHub);$('githubPublish').addEventListener('click',publishGitHub);$('copyPublicUrl').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('githubPagesUrl').value);$('githubPublishStatus').textContent='Enlace copiado.'}catch(_){}});
     addEventListener('beforeunload',()=>{previewUrls.forEach(u=>URL.revokeObjectURL(u));try{detachedPreviewWindow?.close()}catch(_){}});
   }
