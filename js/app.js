@@ -2093,7 +2093,17 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
           &&prior?.gallery===repo&&prior?.storagePrefix==='galerias/'+repo+'/'
           &&/^[a-f0-9]{32}$/.test(prior?.nonce||'');
       } catch(error) { if(error?.status!==404)throw error; }
-      if(!alreadyRetired) {
+      // Una limpieza fallida puede dejar el comprobante en GitHub sin haber
+      // retirado aún la página. Este estado intermedio debe poder reintentarse.
+      let alreadyTombstoned=false;
+      if(alreadyRetired) {
+        const currentPage=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/contents/index.html?ref=main');
+        const bytes=Uint8Array.from(atob(String(currentPage.content||'').replace(/\\s/g,'')),c=>c.charCodeAt(0));
+        const pageText=new TextDecoder().decode(bytes);
+        alreadyTombstoned=pageText.includes('<title>Galería no disponible</title>')
+          && pageText.includes('Esta galería ya no está disponible');
+      }
+      if(!alreadyTombstoned) {
         const config=await readGitHubJsonFile(owner,repo,'config.json');
         assertGalleryPathsMatchR2(config,repo);
       }
@@ -2141,7 +2151,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       if(!response.ok||data.ok!==true)
         throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
       // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
-      if(!alreadyRetired) {
+      if(!alreadyTombstoned) {
         line.textContent='Cloudflare confirmó el borrado. Retirando la página pública…';
         const gitBase='/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo);
         const head=await githubRequest(gitBase+'/git/ref/heads/main');
