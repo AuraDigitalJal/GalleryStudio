@@ -1,0 +1,11 @@
+name = "aura-gallery-r2-upload"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+
+[[r2_buckets]]
+binding = "AURA_GALERIAS"
+bucket_name = "aura-galerias"
+
+[vars]
+# Ajustar si la plataforma de pruebas se publica en otro origen.
+ALLOWED_ORIGINS = "https://auradigitaljal.github.io,https://auradigitaljal.com"
