@@ -287,7 +287,9 @@
                 <summary style="cursor:pointer;color:#806764;font-size:12px">Administrar o eliminar galería publicada</summary>
                 <div style="padding-top:12px">
                   <p class="hint">Eliminación completa y manual al terminar el servicio (por ejemplo, tras 3–6 meses): borra las fotografías de esa galería en Cloudflare R2 y elimina su repositorio de GitHub. Necesitas los permisos de GitHub y tu clave R2. Se comprueba el nombre del evento y se pide doble confirmación. No se puede deshacer. Si solo quitas una foto al editar, el archivo anterior en R2 se conserva hasta eliminar la galería completa.</p>
-                  <button type="button" class="btn secondary full" id="deleteGallery">Eliminar galería, fotos y repositorio GitHub</button>
+                  <button type="button" class="btn secondary full" id="checkDeleteReady">Comprobar servicio de eliminación (sin borrar nada)</button>
+                  <p class="status-line" id="checkDeleteReadyStatus" aria-live="polite"></p>
+                  <button type="button" class="btn secondary full" id="deleteGallery">Eliminar definitivamente galería, fotos y repositorio</button>
                   <p class="status-line" id="deleteGalleryStatus" aria-live="polite"></p>
                   <a class="btn secondary full" id="deleteRepoFallback" href="https://github.com/AuraDigitalJal/prueba/settings" target="_blank" rel="noopener noreferrer" hidden>Abrir GitHub para eliminar el repositorio que quedó pendiente</a>
                 </div>
