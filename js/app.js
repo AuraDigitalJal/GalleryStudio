@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.4.30';
+  const VERSION = '1.4.31';
   const $ = id => document.getElementById(id);
   const SECTION_DEFS = [
     ['getting-ready', 'Getting Ready', 'Los Preparativos'],
@@ -2094,10 +2094,9 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     }
   }
 
-  // Borrado coordinado: primero retirar la galería de GitHub Pages,
-  // después limpiar exclusivamente su prefijo en Cloudflare R2.
-  // El repositorio GitHub sigue existiendo como registro, pero su página
-  // publicada ya no contiene fotos. Se permite reintentar si R2 falla.
+  // Borrado completo coordinado: primero validar la galería y publicar un
+  // comprobante en GitHub, luego borrar solo su prefijo de fotos en R2,
+  // retirar la página y eliminar finalmente el repositorio. Admitir reintentos.
   async function readGitHubJsonFile(owner,repo,file) {
     const payload=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/contents/'+file+'?ref=main');
     if(payload.encoding!=='base64'||!payload.content) throw new Error('GitHub no entregó '+file+'.');
@@ -2114,16 +2113,37 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     if(capabilities.deleteGallery!==true)
       throw new Error('El Worker de Cloudflare todavía no admite eliminación conjunta. No se ha borrado nada.');
   }
+  // Dominios oficiales de lectura del mismo bucket: actual, futuro y legado.
+  const R2_APPROVED_PHOTO_HOSTS = new Set([
+    'fotos-prueba.auradigitaljal.com',
+    'fotos.auradigitaljal.com',
+    'pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev'
+  ]);
+  async function checkGalleryDeletionReady() {
+    const button=$('checkDeleteReady'),line=$('checkDeleteReadyStatus');
+    if(!button||!line||button.disabled)return;
+    button.disabled=true;
+    line.textContent='Comprobando servicio de Cloudflare…';
+    try {
+      await requireGalleryDeletionAvailable();
+      line.textContent='Cloudflare confirma que el servicio admite borrado. No se eliminó ninguna fotografía. Para borrar una galería se requieren GitHub, clave R2 y doble confirmación.';
+    } catch(error) {
+      line.textContent='La eliminación no está disponible: '+(error?.message||String(error))+'. No se borró nada.';
+    } finally {
+      button.disabled=false;
+    }
+  }
   function assertGalleryPathsMatchR2(config,repo) {
     if(config.schemaVersion!==1||!Array.isArray(config.photos)||config.photos.length<1)
       throw new Error('Este repositorio no parece una galería compatible; se detuvo el borrado.');
-    const publicHost=new URL($('r2PublicUrl').value).host;
-    const prefix='/galerias/'+repo+'/assets/';
+    const pattern=new RegExp('^/galerias/'+repo+'/assets/img-\\d{3,5}-[a-f0-9]{16}\\.(?:jpg|jpeg|png|webp|gif)$');
     for (const photo of config.photos) {
       let url;
       try{url=new URL(photo.path);}catch(_){throw new Error('La galería tiene fotos fuera de R2; no se ha borrado nada.');}
-      if(url.protocol!=='https:'||url.host!==publicHost||!url.pathname.startsWith(prefix))
-        throw new Error('La galería contiene imágenes fuera de Cloudflare R2; se detuvo para no borrar fotografías equivocadas.');
+      if(url.protocol!=='https:' || !R2_APPROVED_PHOTO_HOSTS.has(url.hostname) ||
+         url.host!==url.hostname || url.username || url.password || url.search || url.hash ||
+         !pattern.test(url.pathname))
+        throw new Error('Las fotografías no corresponden exclusivamente al almacenamiento R2 de esta galería. Se detuvo el borrado para proteger otros eventos.');
     }
   }
   // Borrar el repositorio solo si quedó exactamente el marcador de baja.
@@ -2161,7 +2181,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       if(owner.toLowerCase()!=='auradigitaljal')
         throw new Error('Este borrado está disponible solo para galerías del GitHub de Aura Digital.');
       if(!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])$/.test(repo)
-        || ['auradigitaljal-github-io','auraplataforma55','gallerystudio','aurawebstudio'].includes(repo))
+        || ['auradigitaljal-github-io','auraplataforma55','gallery-studio','gallerystudio','aurawebstudio','auradigitaljal'].includes(repo))
         throw new Error('Selecciona un repositorio válido de galería. No se puede eliminar la plataforma principal.');
       await requireGalleryDeletionAvailable();
       const publishKey=$('r2PublishKey').value.trim();
@@ -2234,6 +2254,8 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       }
       if(!response.ok||data.ok!==true)
         throw new Error('Cloudflare NO confirmó el borrado (HTTP '+response.status+'): '+(data.message||'La limpieza no terminó. Comprueba tu clave R2 y vuelve a intentar.'));
+      // Desde aquí R2 ya confirmó la eliminación aunque GitHub falle después.
+      cloudflareCleaned=true;
       // Solo ahora que R2 confirmó que no quedan fotos, retiramos la página.
       if(!alreadyTombstoned) {
         line.textContent='Cloudflare confirmó el borrado. Retirando la página pública…';
@@ -2254,7 +2276,6 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       }
       // Cloudflare confirmó que ya no quedan fotografías en el prefijo.
       // Únicamente después de ello borramos el repositorio en GitHub.
-      cloudflareCleaned=true;
       line.textContent='Fotos borradas de Cloudflare. Eliminando el repositorio de GitHub…';
       await validateRepositoryForPermanentDeletion(owner,repo,manifest.nonce,repoData.id);
       try {
@@ -2342,6 +2363,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
     $('photoOrderMode').addEventListener('change',()=>{if($('photoOrderMode').value==='name'){state.photos.sort((a,b)=>a.file.name.localeCompare(b.file.name,'es',{numeric:true}));renderPhotoList();schedulePreview();}});
     $('loadConfigUrl').addEventListener('click',loadConfigFromUrl);$('localConfig').addEventListener('change',e=>loadLocalConfig(e.target.files?.[0]));
     $('r2Enabled').addEventListener('change', () => { $('r2Fields').hidden = !$('r2Enabled').checked; });
+    $('checkDeleteReady').addEventListener('click',checkGalleryDeletionReady);
     $('deleteGallery').addEventListener('click',deleteGalleryAndR2);
     $('githubConnect').addEventListener('click',connectGitHub);$('githubPublish').addEventListener('click',publishGitHub);$('copyPublicUrl').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('githubPagesUrl').value);$('githubPublishStatus').textContent='Enlace copiado.'}catch(_){}});
     addEventListener('beforeunload',()=>{previewUrls.forEach(u=>URL.revokeObjectURL(u));try{detachedPreviewWindow?.close()}catch(_){}});
