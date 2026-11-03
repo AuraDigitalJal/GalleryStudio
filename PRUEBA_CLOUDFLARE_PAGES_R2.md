@@ -28,3 +28,6 @@ Las Pages Functions consumen cuotas Workers Free (100.000 solicitudes/día por c
 - https://developers.cloudflare.com/pages/functions/routing/
 - https://developers.cloudflare.com/pages/configuration/custom-domains/
 - https://developers.cloudflare.com/pages/functions/pricing/
+
+## Activación tras conectar R2
+Cloudflare Pages requiere un nuevo despliegue cuando se agrega el binding `AURA_GALERIAS` al bucket `aura-galerias`. Esta actualización documental dispara el redeploy automático del proyecto de pruebas conectado por Git; no toca `main`, los DNS ni las galerías publicadas.
