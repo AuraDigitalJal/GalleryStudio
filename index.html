@@ -13,7 +13,7 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark">G</span>
-        <div><strong>GALLERY STUDIO</strong><small>Event Gallery Builder · v1.4.30 · motor Aura v5.6.4</small></div>
+        <div><strong>GALLERY STUDIO</strong><small>Event Gallery Builder · v1.4.31 · motor Aura v5.6.4</small></div>
       </div>
       <div class="top-actions">
         <span class="live-dot"><i></i> Vista en vivo</span>
@@ -263,7 +263,7 @@
                   <span>Cloudflare R2 · subir fotos optimizadas</span>
                 </label>
                 <div id="r2Fields" style="margin-top:12px">
-                  <p class="hint"><strong>Cloudflare R2 está configurado para Gallery Studio.</strong> No tienes que escribir las direcciones cada vez. Para publicar, introduce tu clave privada de Cloudflare.</p>
+                  <p class="hint"><strong>Cloudflare R2 está conectado a la dirección de fotos que ya verificamos.</strong> Las nuevas galerías cargarán sus fotografías desde <code>fotos-prueba.auradigitaljal.com</code>. Para publicar, introduce tu clave privada de Cloudflare.</p>
                   <label>Clave privada de Cloudflare R2
                     <input id="r2PublishKey" type="password" autocomplete="off" placeholder="Escribe aquí la clave que creaste en Cloudflare">
                   </label>
@@ -274,7 +274,7 @@
                         <input id="r2UploadUrl" type="url" inputmode="url" value="https://aura-gallery-r2-upload.visual-arts-jal.workers.dev">
                       </label>
                       <label>URL pública de las fotografías
-                        <input id="r2PublicUrl" type="url" inputmode="url" value="https://pub-13ff1b1ba169434b9c10a7299b6ead9e.r2.dev">
+                        <input id="r2PublicUrl" type="url" inputmode="url" value="https://fotos-prueba.auradigitaljal.com">
                       </label>
                       <small>Ambas direcciones ya están guardadas en esta versión. Solo cámbialas si modificamos Cloudflare.</small>
                     </div>
@@ -286,7 +286,7 @@
               <details class="delete-gallery-area" style="margin-top:16px">
                 <summary style="cursor:pointer;color:#806764;font-size:12px">Administrar o eliminar galería publicada</summary>
                 <div style="padding-top:12px">
-                  <p class="hint">Eliminación definitiva: quita la galería, borra sus fotos de Cloudflare R2 y elimina su repositorio completo de GitHub. Se necesita permiso de administrador y confirmación. No se puede deshacer.</p>
+                  <p class="hint">Eliminación completa y manual al terminar el servicio (por ejemplo, tras 3–6 meses): borra las fotografías de esa galería en Cloudflare R2 y elimina su repositorio de GitHub. Necesitas los permisos de GitHub y tu clave R2. Se comprueba el nombre del evento y se pide doble confirmación. No se puede deshacer. Si solo quitas una foto al editar, el archivo anterior en R2 se conserva hasta eliminar la galería completa.</p>
                   <button type="button" class="btn secondary full" id="deleteGallery">Eliminar galería, fotos y repositorio GitHub</button>
                   <p class="status-line" id="deleteGalleryStatus" aria-live="polite"></p>
                   <a class="btn secondary full" id="deleteRepoFallback" href="https://github.com/AuraDigitalJal/prueba/settings" target="_blank" rel="noopener noreferrer" hidden>Abrir GitHub para eliminar el repositorio que quedó pendiente</a>
@@ -315,6 +315,6 @@
       </section>
     </main>
   </div>
-  <script src="js/app.js?v=20261102-r2-principal"></script>
+  <script src="js/app.js?v=20261103-r2-dominio-gestion"></script>
 </body>
 </html>
