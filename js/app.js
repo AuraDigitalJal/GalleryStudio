@@ -2098,7 +2098,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
       let alreadyTombstoned=false;
       if(alreadyRetired) {
         const currentPage=await githubRequest('/repos/'+encodeURIComponent(owner)+'/'+encodeURIComponent(repo)+'/contents/index.html?ref=main');
-        const bytes=Uint8Array.from(atob(String(currentPage.content||'').replace(/\\s/g,'')),c=>c.charCodeAt(0));
+        const bytes=Uint8Array.from(atob(String(currentPage.content||'').replace(/\s/g,'')),c=>c.charCodeAt(0));
         const pageText=new TextDecoder().decode(bytes);
         alreadyTombstoned=pageText.includes('<title>Galería no disponible</title>')
           && pageText.includes('Esta galería ya no está disponible');
