@@ -1,0 +1,46 @@
+name: Aura Digital - Monitoreo Cloudflare
+on:
+  schedule:
+    - cron: '15 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auradigital-monitor-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Obtener archivos
+        uses: actions/checkout@v4
+
+      - name: Obtener metricas (sin modificar R2)
+        id: monitor
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "## Monitoreo pendiente de configurar" >> "$GITHUB_STEP_SUMMARY"
+            echo "Agregar el secreto CLOUDFLARE_API_TOKEN y la variable CLOUDFLARE_ACCOUNT_ID." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 cloudflare-monitor/monitor.py
+          cat cloudflare-monitor/reportes/RESUMEN.md >> "$GITHUB_STEP_SUMMARY"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar reporte como artefacto (30 dias)
+        if: steps.monitor.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: aura-cloudflare-reporte
+          path: cloudflare-monitor/reportes/
+          retention-days: 30
+          if-no-files-found: error
