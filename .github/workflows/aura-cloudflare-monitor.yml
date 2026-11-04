@@ -63,6 +63,7 @@ jobs:
             operaciones_mes_bucket: (.operaciones_mes_bucket | {A, B, sin_clasificar}),
             transferencia_mes_bucket: (.transferencia_mes_bucket | {bytesUpload, bytesDownload}),
             worker: (.worker | {requests, errors}),
+            worker_dia_cuenta: (.worker_dia_cuenta | {desde_utc, requests, errors}),
             alertas_orientativas
           }' cloudflare-monitor/reportes/ultimo.json > /tmp/aura-monitor-publico.json
           target="cloudflare-monitor/estado/ultimo.json"
