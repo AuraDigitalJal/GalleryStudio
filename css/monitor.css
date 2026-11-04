@@ -26,3 +26,31 @@
 .aura-monitor-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .aura-monitor-dialog .btn{font-size:11px}
 @media(max-width:680px){.aura-monitor-overlay{padding:9px;align-items:center}.aura-monitor-dialog{padding:18px 15px;max-height:94dvh;border-radius:14px}.aura-monitor-head h2{font-size:25px}.aura-monitor-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.aura-monitor-stat{padding:12px}.aura-monitor-stat strong{font-size:18px}.aura-monitor-status{align-items:flex-start;flex-direction:column;gap:4px}.aura-monitor-updated{text-align:left}.aura-monitor-actions{width:100%}.aura-monitor-actions>*{flex:1}}
+
+/* Comparador de márgenes: barras, porcentajes y advertencias de cuota. */
+.aura-monitor-comparison{margin:19px 0 4px;padding:17px;background:#fff;border:1px solid #e4dccf;border-radius:13px}
+.aura-monitor-comparison-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.aura-monitor-comparison-head h3{font:500 20px/1.25 Georgia,serif;margin:0 0 4px}
+.aura-monitor-comparison-head p{margin:0;font-size:10px;line-height:1.5;color:#81786c}
+.aura-monitor-comparison-status{flex:none;border:1px solid #d6e2d2;border-radius:999px;padding:6px 8px;background:#f4f8f2;color:#546c50;font-size:10px}
+.aura-monitor-comparison-status.warning{background:#fff1e6;border-color:#ecc3a4;color:#955532}
+.aura-monitor-meter-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.aura-monitor-meter{min-width:0;padding:13px;border:1px solid #e9e2d8;border-radius:9px;background:#fefdfb}
+.aura-monitor-meter-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;font-size:11px;line-height:1.4}
+.aura-monitor-meter-head strong{font-weight:650}
+.aura-monitor-meter-limit{font-size:9px;color:#928577;text-align:right}
+.aura-monitor-meter-progress{height:9px;background:#e7e1d9;border-radius:999px;overflow:hidden;margin-top:12px}
+.aura-monitor-meter-fill{display:block;height:100%;width:0%;border-radius:inherit;background:#668b71;transition:width .3s ease}
+.aura-monitor-meter[data-level=caution] .aura-monitor-meter-fill{background:#d4a052}
+.aura-monitor-meter[data-level=high] .aura-monitor-meter-fill{background:#c57d43}
+.aura-monitor-meter[data-level=critical] .aura-monitor-meter-fill{background:#b9514c}
+.aura-monitor-meter-bottom{display:flex;align-items:baseline;justify-content:space-between;gap:7px;margin-top:9px;font-size:10px;color:#84786c}
+.aura-monitor-meter-bottom strong{font-size:13px;color:#425b47;white-space:nowrap}
+.aura-monitor-meter[data-level=high] .aura-monitor-meter-bottom strong,.aura-monitor-meter[data-level=critical] .aura-monitor-meter-bottom strong{color:#a35c36}
+.aura-monitor-meter[data-level=unknown] .aura-monitor-meter-bottom strong{color:#918579}
+.aura-monitor-meter-footnote{font-size:9px;line-height:1.5;color:#857b70;margin:9px 0 0}
+.aura-monitor-quota-note{font-size:9px;color:#7f756a;margin:12px 0 0;line-height:1.6}
+.aura-monitor-reference{font-size:10px;margin:10px 0 0;color:#7c7062}
+.aura-monitor-reference a{color:#7a664b}
+@media(max-width:680px){.aura-monitor-comparison{padding:13px}.aura-monitor-comparison-head{flex-direction:column;gap:7px}.aura-monitor-meter-list{grid-template-columns:1fr}.aura-monitor-meter-head{gap:6px}.aura-monitor-meter-bottom strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.aura-monitor-meter-fill{transition:none}}
