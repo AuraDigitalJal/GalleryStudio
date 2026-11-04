@@ -12,13 +12,19 @@ Herramienta de consulta **solo lectura** de Cloudflare R2 y Workers, agregada a 
 
 Se ejecuta automáticamente cada día a las **14:15 UTC / 08:15 hora de Jalisco**. GitHub puede retrasar trabajos programados.
 
+## Ventana dentro de Gallery Studio
+
+En la barra superior, pulsa **Monitor R2**. La ventana consulta el último JSON de `monitor-estado` y permite refrescar manualmente las cifras o abrir el historial del trabajo programado. No necesitas escribir la clave de Cloudflare para mirar el estado. Se muestran datos de la última medición, **no en tiempo real**. La rama y los datos agregados son públicos por tratarse de un repositorio público.
+
+Si el reporte deja de actualizarse, revisa la acción de GitHub para confirmar las credenciales y permisos de escritura en `monitor-estado`. La rama `main` y las galerías entregadas permanecen sin cambios.
+
 ## Qué mide
 
 - Bucket R2 `aura-galerias`: almacenamiento actual (última muestra), número de objetos, operaciones de clase A/B y transferencia contabilizada durante el mes UTC.
 - Worker `aura-gallery-r2-upload`: solicitudes y errores del mes UTC, cuando están disponibles.
 - Avisos orientativos cuando una de las referencias llegue a 70%, 85% o 95% (visibles en el reporte, **no son notificaciones automáticas**).
 
-Los datos se muestran como un **resumen de GitHub Actions y un artefacto que caduca en 30 días**. No se realizan commits diarios, de modo que no se dispara el despliegue de GitHub Pages por nuevos reportes. No se accede a fotografías ni se muestran nombres o rutas de objetos.
+Los datos se muestran como un **resumen de GitHub Actions y un artefacto que caduca en 30 días**. No se realizan commits diarios en `main`: cada ejecución también actualiza un resumen JSON de solo lectura en la rama `monitor-estado`, sin disparar el despliegue de GitHub Pages en `main`. El resumen contiene exclusivamente fecha, almacenamiento, conteos, transferencia, errores y alertas; excluye el token, Account ID, rutas de objetos y datos de clientes. No se accede a fotografías ni se muestran nombres o rutas de objetos.
 
 **Importante:** el repositorio `GalleryStudio` es público y los resúmenes o artefactos de Actions podrían ser visibles para otras personas. El informe contiene solo cifras globales; **nunca** el token ni el Account ID. Si se necesitara confidencialidad absoluta de estas cifras, sería preferible un repositorio privado.
 
