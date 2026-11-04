@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f4f1eb">
   <title>Gallery Studio · Event Gallery Builder</title>
   <link rel="stylesheet" href="css/editor.css">
-  <link rel="stylesheet" href="css/monitor.css?v=20261104">
+  <link rel="stylesheet" href="css/monitor.css?v=20261104-quotas">
   <script src="js/vendor/jszip.min.js"></script>
 </head>
 <body>
@@ -345,6 +345,48 @@
         <article class="aura-monitor-stat"><small>Solicitudes Worker</small><strong id="monitorRequests">—</strong><span>Mes actual · no son visitas</span></article>
         <article class="aura-monitor-stat"><small>Errores Worker</small><strong id="monitorErrors">—</strong><span>Mes actual</span></article>
       </div>
+
+      <section class="aura-monitor-comparison" aria-labelledby="monitorQuotaTitle">
+        <div class="aura-monitor-comparison-head">
+          <div>
+            <h3 id="monitorQuotaTitle">Consumo frente a límites gratuitos</h3>
+            <p>Porcentaje utilizado y porcentaje restante. Referencias, no facturación exacta.</p>
+          </div>
+          <span id="monitorQuotaSummary" class="aura-monitor-comparison-status" aria-live="polite">Calculando…</span>
+        </div>
+        <div class="aura-monitor-meter-list">
+          <div class="aura-monitor-meter" data-meter-key="storage">
+            <div class="aura-monitor-meter-head"><strong>Almacenamiento R2</strong><span class="aura-monitor-meter-limit">Referencia: 10 GB-mes</span></div>
+            <div class="aura-monitor-meter-progress" role="progressbar" aria-label="Almacenamiento R2 utilizado" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="aura-monitor-meter-fill"></span></div>
+            <div class="aura-monitor-meter-bottom"><span data-meter-used>—</span><strong data-meter-free>—</strong></div>
+            <p class="aura-monitor-meter-footnote" data-meter-note>Estimación por almacenamiento actual del bucket; no equivale al promedio facturable.</p>
+          </div>
+          <div class="aura-monitor-meter" data-meter-key="operationsA">
+            <div class="aura-monitor-meter-head"><strong>Operaciones clase A</strong><span class="aura-monitor-meter-limit">Referencia: 1 millón / mes</span></div>
+            <div class="aura-monitor-meter-progress" role="progressbar" aria-label="Operaciones A utilizadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="aura-monitor-meter-fill"></span></div>
+            <div class="aura-monitor-meter-bottom"><span data-meter-used>—</span><strong data-meter-free>—</strong></div>
+            <p class="aura-monitor-meter-footnote" data-meter-note>Solo este bucket, no toda la cuenta.</p>
+          </div>
+          <div class="aura-monitor-meter" data-meter-key="operationsB">
+            <div class="aura-monitor-meter-head"><strong>Operaciones clase B</strong><span class="aura-monitor-meter-limit">Referencia: 10 millones / mes</span></div>
+            <div class="aura-monitor-meter-progress" role="progressbar" aria-label="Operaciones B utilizadas" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="aura-monitor-meter-fill"></span></div>
+            <div class="aura-monitor-meter-bottom"><span data-meter-used>—</span><strong data-meter-free>—</strong></div>
+            <p class="aura-monitor-meter-footnote" data-meter-note>Solo este bucket, no toda la cuenta.</p>
+          </div>
+          <div class="aura-monitor-meter" data-meter-key="workerDay">
+            <div class="aura-monitor-meter-head"><strong>Workers: solicitudes hoy</strong><span class="aura-monitor-meter-limit">Referencia: 100,000 / día UTC</span></div>
+            <div class="aura-monitor-meter-progress" role="progressbar" aria-label="Solicitudes de Workers utilizadas en el día" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="aura-monitor-meter-fill"></span></div>
+            <div class="aura-monitor-meter-bottom"><span data-meter-used>—</span><strong data-meter-free>—</strong></div>
+            <p class="aura-monitor-meter-footnote" data-meter-note>Consultando total diario de Workers de la cuenta…</p>
+          </div>
+        </div>
+        <p class="aura-monitor-quota-note">Importante: las cifras R2 de este panel proceden del bucket de galerías. Si la cuenta tiene otros buckets, el margen real disponible es menor. Almacenamiento se factura en GB-mes, no según una sola muestra.</p>
+        <p class="aura-monitor-quota-note">Descargas R2: <strong>sin límite de salida facturable</strong>. Se muestran arriba como tráfico, no como consumo de una cuota.</p>
+        <p class="aura-monitor-reference">Referencias oficiales:
+          <a href="https://developers.cloudflare.com/r2/pricing/" target="_blank" rel="noopener noreferrer">R2</a> ·
+          <a href="https://developers.cloudflare.com/workers/platform/limits/" target="_blank" rel="noopener noreferrer">Workers</a>
+        </p>
+      </section>
       <div class="aura-monitor-info">
         <p><strong>Alertas:</strong> <span id="monitorWarning">Consultando…</span></p>
         <p id="monitorNotes">Las métricas son orientativas y se actualizan mediante GitHub Actions.</p>
@@ -363,6 +405,6 @@
     </section>
   </div>
   <script src="js/app.js?v=20261103-r2-dominio-gestion"></script>
-  <script src="js/monitor-ui.js?v=20261104b"></script>
+  <script src="js/monitor-ui.js?v=20261104-quotas"></script>
 </body>
 </html>
