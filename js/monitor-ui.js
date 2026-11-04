@@ -41,9 +41,79 @@
     return response.json();
   }
 
+
+  // Comparativas orientativas. R2 usa solo datos del bucket; no es el saldo real
+  // de una cuenta que pueda tener otros buckets. Workers se mide por día UTC.
+  const quotaLimits = Object.freeze({ storage: 10000, operationsA: 1000000, operationsB: 10000000, workerDay: 100000 });
+  const pct = (n) => n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+  function paintQuota(key, value, description) {
+    const node = document.querySelector('.aura-monitor-meter[data-meter-key="' + key + '"]');
+    if (!node) return null;
+    const bar = node.querySelector('.aura-monitor-meter-progress');
+    const fill = node.querySelector('.aura-monitor-meter-fill');
+    const used = node.querySelector('[data-meter-used]');
+    const free = node.querySelector('[data-meter-free]');
+    const note = node.querySelector('[data-meter-note]');
+    const limit = quotaLimits[key];
+    if (value === null || value === undefined || !Number.isFinite(Number(value)) || Number(value) < 0) {
+      node.dataset.level = 'unknown';
+      fill.style.width = '0%';
+      bar.removeAttribute('aria-valuenow');
+      bar.setAttribute('aria-valuetext', 'Métrica no disponible');
+      used.textContent = 'Sin dato diario comparable';
+      free.textContent = '—';
+      note.textContent = description;
+      return null;
+    }
+    const consumed = Number(value);
+    const percentUsed = consumed / limit * 100;
+    const percentFree = Math.max(0, 100 - percentUsed);
+    const remaining = Math.max(0, limit - consumed);
+    const level = percentUsed >= 100 ? 'critical' : percentUsed >= 95 ? 'critical' : percentUsed >= 85 ? 'high' : percentUsed >= 70 ? 'caution' : 'ok';
+    node.dataset.level = level;
+    fill.style.width = Math.min(100, percentUsed) + '%';
+    bar.setAttribute('aria-valuenow', String(Math.min(100, Math.max(0, percentUsed))));
+    bar.setAttribute('aria-valuetext', pct(percentUsed) + ' usado, ' + pct(percentFree) + ' restante');
+    used.textContent = pct(percentUsed) + ' utilizado' + (key === 'storage' ? ' (referencia)' : '');
+    free.textContent = percentUsed > 100
+      ? 'Exceso: ' + pct(percentUsed - 100)
+      : pct(percentFree) + ' restante';
+    const unit = key === 'storage' ? ' MB aprox.' : ' solicitudes/operaciones';
+    note.textContent = description + ' · Margen teórico: ' +
+      (key === 'storage' ? remaining.toLocaleString('es-MX', { maximumFractionDigits: 2 }) : formatNumber(remaining)) + unit;
+    return { level, percentUsed };
+  }
+
+  function displayQuotas(data) {
+    const checks = [
+      paintQuota('storage', data.almacenamiento?.megabytes, 'Almacenamiento actual; no es el promedio GB-mes de la cuenta'),
+      paintQuota('operationsA', data.operaciones_mes_bucket?.A, 'Mes UTC · únicamente bucket de galerías'),
+      paintQuota('operationsB', data.operaciones_mes_bucket?.B, 'Mes UTC · únicamente bucket de galerías')
+    ];
+    const day = data.worker_dia_cuenta;
+    const measuredAt = new Date(data.consultado_utc);
+    const measuredDay = Number.isNaN(measuredAt.getTime()) ? '' : measuredAt.toISOString().slice(0, 10);
+    // La cuota de Workers se reinicia a medianoche UTC; jamás reutilizar
+    // un conteo diario del día anterior como si fuese el de hoy.
+    const isCurrentUtcDay = day && typeof day.desde_utc === 'string' &&
+      day.desde_utc.slice(0, 10) === measuredDay &&
+      measuredDay === new Date().toISOString().slice(0, 10);
+    checks.push(paintQuota('workerDay', isCurrentUtcDay ? day.requests : null,
+      day ? 'Dato diario anterior o incompleto; espera la siguiente medición del día UTC' :
+      'Disponible a partir de la siguiente ejecución del monitor; el acumulado mensual no se compara con el tope diario'));
+    const valid = checks.filter(Boolean);
+    const worst = valid.reduce((acc, c) => Math.max(acc, c.percentUsed), 0);
+    setText('monitorQuotaSummary', worst >= 95 ? 'Atención: 95% o más' :
+      worst >= 85 ? 'Precaución: 85% o más' :
+      worst >= 70 ? 'Vigilancia: 70% o más' :
+      'Bajo 70% en referencias comparadas');
+    $('monitorQuotaSummary').classList.toggle('warning', worst >= 70);
+  }
+
   function displayReport(data) {
     if (!data || !data.consultado_utc || !data.almacenamiento || !data.operaciones_mes_bucket)
       throw new Error('El archivo de monitoreo está incompleto.');
+    displayQuotas(data);
     setText('monitorUpdated', formatDate(data.consultado_utc));
     setText('monitorStorage', Number(data.almacenamiento.megabytes).toLocaleString('es-MX', { maximumFractionDigits: 2 }) + ' MB');
     setText('monitorObjects', formatNumber(data.almacenamiento.objetos));
