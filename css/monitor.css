@@ -1,0 +1,28 @@
+/* Cloudflare monitor · estilos aislados; no alteran las galerías. */
+.aura-monitor-open{overflow:hidden}
+.aura-monitor-overlay[hidden]{display:none!important}
+.aura-monitor-overlay{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(29,26,23,.52);backdrop-filter:blur(6px)}
+.aura-monitor-dialog{width:min(850px,100%);max-height:min(90vh,900px);overflow:auto;background:#fdfbf7;border:1px solid #d6cab9;border-radius:18px;box-shadow:0 26px 80px rgba(0,0,0,.2);color:#302b26;padding:25px}
+.aura-monitor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:1px solid #e7e0d5;padding-bottom:17px}
+.aura-monitor-eyebrow{color:#8d7759;font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:650}
+.aura-monitor-head h2{font:500 30px/1.1 Georgia,serif;margin:8px 0 6px}
+.aura-monitor-subtitle{margin:0;color:#857c70;font-size:11px;line-height:1.5}
+.aura-monitor-close{flex:none;border:1px solid #dfd7cb;border-radius:50%;background:white;width:34px;height:34px;font-size:22px;line-height:1;cursor:pointer;color:#5f574e}
+.aura-monitor-status{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 0 14px;font-size:11px;color:#5d6f55}
+.aura-monitor-status strong{font-weight:600}
+.aura-monitor-status .warning{color:#a35f42}
+.aura-monitor-updated{color:#867c6d;text-align:right}
+.aura-monitor-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.aura-monitor-stat{background:white;border:1px solid #e6ded2;border-radius:12px;padding:15px 13px;min-width:0}
+.aura-monitor-stat small{display:block;color:#817567;font-size:10px;line-height:1.45}
+.aura-monitor-stat strong{display:block;font-size:21px;line-height:1.2;margin:9px 0 4px;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.aura-monitor-stat span{display:block;color:#a3998b;font-size:9px}
+.aura-monitor-info{margin-top:16px;padding:14px 16px;border:1px solid #e6ded2;background:#f7f3ed;border-radius:11px;font-size:11px;line-height:1.6}
+.aura-monitor-info p{margin:0}
+.aura-monitor-info .warning{color:#995233;font-weight:600}
+.aura-monitor-info p+p{margin-top:8px;color:#807668}
+.aura-monitor-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #e7e0d5;margin-top:18px;padding-top:17px;flex-wrap:wrap}
+.aura-monitor-foot p{margin:0;color:#8d8173;font-size:10px}
+.aura-monitor-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.aura-monitor-dialog .btn{font-size:11px}
+@media(max-width:680px){.aura-monitor-overlay{padding:9px;align-items:center}.aura-monitor-dialog{padding:18px 15px;max-height:94dvh;border-radius:14px}.aura-monitor-head h2{font-size:25px}.aura-monitor-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.aura-monitor-stat{padding:12px}.aura-monitor-stat strong{font-size:18px}.aura-monitor-status{align-items:flex-start;flex-direction:column;gap:4px}.aura-monitor-updated{text-align:left}.aura-monitor-actions{width:100%}.aura-monitor-actions>*{flex:1}}
