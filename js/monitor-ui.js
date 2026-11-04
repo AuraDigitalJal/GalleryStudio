@@ -15,9 +15,9 @@
   const refresh = $('monitorRefresh');
   if (!overlay || !trigger || !close || !refresh) return;
 
-  const formatNumber = (n) => Number.isFinite(Number(n))
+  const formatNumber = (n) => n !== null && n !== undefined && n !== '' && Number.isFinite(Number(n))
     ? new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 }).format(Number(n)) : '—';
-  const formatMB = (bytes) => Number.isFinite(Number(bytes))
+  const formatMB = (bytes) => bytes !== null && bytes !== undefined && bytes !== '' && Number.isFinite(Number(bytes))
     ? (Number(bytes) / 1e6).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MB' : '—';
   const formatDate = (s) => {
     const d = new Date(s);
