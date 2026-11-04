@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: auradigital-monitor-cloudflare
@@ -47,3 +47,34 @@ jobs:
           path: cloudflare-monitor/reportes/
           retention-days: 30
           if-no-files-found: error
+
+      # Solo exportamos conteos globales. El token, cuenta, rutas y fotos NUNCA salen.
+      # Se publica en otra rama para no disparar despliegues de la plataforma en main.
+      - name: Actualizar datos del monitor en rama independiente
+        if: steps.monitor.outputs.ready == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          jq '{
+            consultado_utc, mes_desde_utc,
+            almacenamiento: (.almacenamiento | {megabytes, objetos}),
+            operaciones_mes_bucket: (.operaciones_mes_bucket | {A, B, sin_clasificar}),
+            transferencia_mes_bucket: (.transferencia_mes_bucket | {bytesUpload, bytesDownload}),
+            worker: (.worker | {requests, errors}),
+            alertas_orientativas
+          }' cloudflare-monitor/reportes/ultimo.json > /tmp/aura-monitor-publico.json
+          target="cloudflare-monitor/estado/ultimo.json"
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/$target?ref=monitor-estado" --jq '.sha' 2>/dev/null || true)"
+          encoded="$(base64 -w 0 /tmp/aura-monitor-publico.json)"
+          jq -n \
+            --arg message "Actualizar resumen agregado de Cloudflare" \
+            --arg content "$encoded" \
+            --arg branch "monitor-estado" \
+            --arg sha "$current_sha" \
+            '{message:$message,content:$content,branch:$branch} +
+             (if $sha == "" then {} else {sha:$sha} end)' > /tmp/aura-monitor-payload.json
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/$target" \
+            --input /tmp/aura-monitor-payload.json > /dev/null
+          echo "Informe agregado actualizado en monitor-estado."
