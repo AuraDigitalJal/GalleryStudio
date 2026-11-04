@@ -75,6 +75,13 @@
     try {
       const result = await githubRead(api + '/actions/runs?per_page=30');
       const latest = (result.workflow_runs || []).find(r => r.path === '.github/workflows/aura-cloudflare-monitor.yml');
+      const pages = (result.workflow_runs || []).find(r => r.path === 'dynamic/pages/pages-build-deployment');
+      if (pages) {
+        const pagesStatus = pages.status === 'completed'
+          ? (pages.conclusion === 'success' ? 'Correcto' : 'Revisar: ' + pages.conclusion)
+          : 'En proceso';
+        setText('monitorPages', pagesStatus + ' · ' + formatDate(pages.created_at));
+      } else setText('monitorPages', 'Sin despliegues visibles');
       if (!latest) { setText('monitorWorkflow', 'Sin ejecuciones visibles'); return; }
       let label = latest.status === 'completed'
         ? (latest.conclusion === 'success' ? 'Completada correctamente' : 'Revisar ejecución: ' + latest.conclusion)
@@ -84,6 +91,7 @@
       if (link && typeof latest.html_url === 'string' && /^https:\/\/github\.com\/AuraDigitalJal\/GalleryStudio\/actions\/runs\/\d+$/.test(latest.html_url)) link.href = latest.html_url;
     } catch (_) {
       setText('monitorWorkflow', 'Estado de ejecución no disponible');
+      setText('monitorPages', 'Despliegue no disponible');
     }
   }
 
