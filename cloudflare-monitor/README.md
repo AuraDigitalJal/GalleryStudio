@@ -22,6 +22,8 @@ Si el reporte deja de actualizarse, revisa la acción de GitHub para confirmar l
 
 - Bucket R2 `aura-galerias`: almacenamiento actual (última muestra), número de objetos, operaciones de clase A/B y transferencia contabilizada durante el mes UTC.
 - Worker `aura-gallery-r2-upload`: solicitudes y errores del mes UTC, cuando están disponibles.
+- Total de solicitudes de **todos los Workers de la cuenta** desde medianoche UTC, cuando Cloudflare ofrece la métrica; a diferencia de la cifra mensual, esta se puede comparar con 100,000 solicitudes/día del plan Free. Si no está disponible, el panel lo indica.
+- El comparador muestra el porcentaje utilizado y restante frente a: R2 estándar (10 GB-mes, 1 millón de operaciones A y 10 millones B al mes) y Workers Free (100,000 solicitudes/día). Son referencias, no límites técnicos configurados ni bloqueos. Para R2 la comparación es parcial: el bucket no equivale a toda la cuenta y los MB actuales no equivalen al promedio GB-mes facturable. Las descargas a Internet no usan cuota de egreso en R2.
 - Avisos orientativos cuando una de las referencias llegue a 70%, 85% o 95% (visibles en el reporte, **no son notificaciones automáticas**).
 
 Los datos se muestran como un **resumen de GitHub Actions y un artefacto que caduca en 30 días**. No se realizan commits diarios en `main`: cada ejecución también actualiza un resumen JSON de solo lectura en la rama `monitor-estado`, sin disparar el despliegue de GitHub Pages en `main`. El resumen contiene exclusivamente fecha, almacenamiento, conteos, transferencia, errores y alertas; excluye el token, Account ID, rutas de objetos y datos de clientes. No se accede a fotografías ni se muestran nombres o rutas de objetos.
