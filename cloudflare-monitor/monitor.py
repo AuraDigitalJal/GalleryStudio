@@ -52,6 +52,15 @@ WORKERS = """query($id:string!,$start:Time!,$end:Time!,$script:string!){
  }}
 }"""
 
+WORKERS_DAILY_ACCOUNT = """query($id:string!,$start:Time!,$end:Time!){
+ viewer{accounts(filter:{accountTag:$id}){
+  workersInvocationsAdaptive(limit:1,filter:{
+    datetime_geq:$start,datetime_leq:$end}){
+   sum{requests errors}
+  }
+ }}
+}"""
+
 def api(query, variables, field):
     body = json.dumps({"query": query, "variables": variables}).encode()
     req = Request(API, data=body, headers={
@@ -116,6 +125,21 @@ def report():
     except RuntimeError:
         warnings.append("No se pudieron consultar las métricas del Worker; R2 sí se consultó.")
         worker_data = {"requests":None,"errors":None}
+    # El límite Workers Free es DIARIO y se aplica a toda la cuenta.
+    # El dato mensual de un solo Worker jamás se usa contra esa cuota.
+    today_utc = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        worker_today_rows = api(WORKERS_DAILY_ACCOUNT, {
+            "id": account, "start": iso(today_utc), "end": iso(now)
+        }, "workersInvocationsAdaptive")
+        worker_day = {
+            "desde_utc": iso(today_utc),
+            "requests": sum(int((r.get("sum") or {}).get("requests") or 0) for r in worker_today_rows),
+            "errors": sum(int((r.get("sum") or {}).get("errors") or 0) for r in worker_today_rows)
+        }
+    except RuntimeError:
+        warnings.append("No se pudo consultar el total diario de Workers a nivel cuenta.")
+        worker_day = {"desde_utc": iso(today_utc), "requests": None, "errors": None}
     checks = {
         "Almacenamiento actual (referencia, NO GB-mes facturados)": used/(LIMIT_GB*1_000_000_000)*100,
         "Operaciones A del bucket (mes UTC)": ops["A"]/LIMIT_A*100,
@@ -135,6 +159,7 @@ def report():
         "operaciones_mes_bucket":ops,
         "transferencia_mes_bucket":bandwidth,
         "worker":{"nombre":WORKER,**worker_data},
+        "worker_dia_cuenta":worker_day,
         "alertas_orientativas":alerts,
         "advertencias":warnings+[
             "Los límites de R2 son por cuenta, no por bucket. No representan facturación exacta.",
@@ -160,7 +185,8 @@ def markdown(data):
         f"| Descarga R2 contabilizada (mes) | {bw['bytesDownload']/1_000_000:.2f} MB |",
         f"| Subida R2 contabilizada (mes) | {bw['bytesUpload']/1_000_000:.2f} MB |",
         f"| Worker: solicitudes (mes) | {fmt(w['requests'])} |",
-        f"| Worker: errores (mes) | {fmt(w['errors'])} |","",
+        f"| Worker: errores (mes) | {fmt(w['errors'])} |",
+        f"| Workers: solicitudes hoy (cuenta, UTC) | {fmt(data['worker_dia_cuenta']['requests'])} |","",
         "## Alertas orientativas","",
     ]
     if data["alertas_orientativas"]:
