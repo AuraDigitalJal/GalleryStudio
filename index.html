@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f4f1eb">
   <title>Gallery Studio · Event Gallery Builder</title>
   <link rel="stylesheet" href="css/editor.css">
+  <link rel="stylesheet" href="css/monitor.css?v=20261104">
   <script src="js/vendor/jszip.min.js"></script>
 </head>
 <body>
@@ -19,6 +20,7 @@
         <span class="live-dot"><i></i> Vista en vivo</span>
         <button class="btn secondary" id="openPreview">Vista móvil ↗</button>
         <button class="btn secondary" id="refreshPreview">Actualizar</button>
+        <button class="btn secondary" type="button" id="openMonitor" aria-haspopup="dialog" aria-controls="monitorOverlay">Monitor R2</button>
         <button class="btn secondary" id="jumpGitHub">Publicar en GitHub</button>
         <button class="btn primary" id="generateZip">Generar ZIP</button>
       </div>
@@ -317,6 +319,49 @@
       </section>
     </main>
   </div>
+
+  <!-- Monitor operativo; fuera del editor y de las galerías publicadas. -->
+  <div class="aura-monitor-overlay" id="monitorOverlay" hidden>
+    <section class="aura-monitor-dialog" role="dialog" aria-modal="true" aria-labelledby="monitorTitle" tabindex="-1">
+      <header class="aura-monitor-head">
+        <div>
+          <span class="aura-monitor-eyebrow">Aura Digital · Cloudflare</span>
+          <h2 id="monitorTitle">Monitor de galerías</h2>
+          <p class="aura-monitor-subtitle">Consumo de R2 y Worker · lectura segura de GitHub Actions</p>
+        </div>
+        <button class="aura-monitor-close" id="monitorClose" type="button" aria-label="Cerrar monitor">×</button>
+      </header>
+      <div class="aura-monitor-status" aria-live="polite">
+        <strong id="monitorState">Consultando reporte…</strong>
+        <span class="aura-monitor-updated">Última lectura: <span id="monitorUpdated">—</span></span>
+      </div>
+      <div class="aura-monitor-grid">
+        <article class="aura-monitor-stat"><small>Almacenamiento R2</small><strong id="monitorStorage">—</strong><span>Última muestra del bucket</span></article>
+        <article class="aura-monitor-stat"><small>Objetos almacenados</small><strong id="monitorObjects">—</strong><span>Archivos en R2</span></article>
+        <article class="aura-monitor-stat"><small>Operaciones A</small><strong id="monitorOpsA">—</strong><span>Mes actual · bucket</span></article>
+        <article class="aura-monitor-stat"><small>Operaciones B</small><strong id="monitorOpsB">—</strong><span>Mes actual · bucket</span></article>
+        <article class="aura-monitor-stat"><small>Subidas a R2</small><strong id="monitorUploads">—</strong><span>Transferencia contabilizada</span></article>
+        <article class="aura-monitor-stat"><small>Descargas de R2</small><strong id="monitorDownloads">—</strong><span>Transferencia contabilizada</span></article>
+        <article class="aura-monitor-stat"><small>Solicitudes Worker</small><strong id="monitorRequests">—</strong><span>Mes actual · no son visitas</span></article>
+        <article class="aura-monitor-stat"><small>Errores Worker</small><strong id="monitorErrors">—</strong><span>Mes actual</span></article>
+      </div>
+      <div class="aura-monitor-info">
+        <p><strong>Alertas:</strong> <span id="monitorWarning">Consultando…</span></p>
+        <p id="monitorNotes">Las métricas son orientativas y se actualizan mediante GitHub Actions.</p>
+      </div>
+      <div class="aura-monitor-foot">
+        <div>
+          <p>Periodo: <span id="monitorPeriod">—</span></p>
+          <p>GitHub Actions: <span id="monitorWorkflow">Consultando…</span></p>
+        </div>
+        <div class="aura-monitor-actions">
+          <button class="btn primary" type="button" id="monitorRefresh">Actualizar datos</button>
+          <a class="btn secondary" id="monitorRunLink" href="https://github.com/AuraDigitalJal/GalleryStudio/actions/workflows/aura-cloudflare-monitor.yml" target="_blank" rel="noopener noreferrer">Ver historial ↗</a>
+        </div>
+      </div>
+    </section>
+  </div>
   <script src="js/app.js?v=20261103-r2-dominio-gestion"></script>
+  <script src="js/monitor-ui.js?v=20261104"></script>
 </body>
 </html>
