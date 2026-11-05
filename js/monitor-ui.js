@@ -27,12 +27,15 @@
   const setText = (id, value) => { const node = $(id); if (node) node.textContent = value; };
   let previousFocus = null;
   let loading = false;
+  let measuring = false;
 
-  async function githubRead(url) {
+  async function githubRead(url, token = '') {
+    const headers = { Accept: 'application/vnd.github+json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
     const response = await fetch(url, {
       method: 'GET',
       cache: 'no-store',
-      headers: { Accept: 'application/vnd.github+json' }
+      headers
     });
     if (!response.ok) throw new Error(
       response.status === 404 ? 'El reporte todavía no está publicado.' :
@@ -196,10 +199,128 @@
       $('monitorState').classList.add('warning');
     } finally {
       loading = false;
+      refresh.disabled = measuring;
+      refresh.textContent = measuring ? 'Midiendo…' : 'Actualizar datos';
+    }
+    await loadWorkflowStatus();
+  }
+
+  // La lectura normal solo consulta el último JSON. Este comando provoca
+  // una medición nueva mediante repository_dispatch, con el mismo permiso
+  // Contents: write que usa el editor para publicar en GitHub.
+  async function startMeasurement() {
+    if (measuring || loading) return;
+    const token = ($('githubToken')?.value || '').trim();
+    if (!token) {
+      setText('monitorState', 'Para medir ahora necesitas el token de GitHub en 06 · Publicar. Escríbelo allí y vuelve a pulsar Actualizar datos.');
+      $('monitorState').classList.add('warning');
+      return;
+    }
+
+    measuring = true;
+    refresh.disabled = true;
+    refresh.textContent = 'Midiendo…';
+    $('monitorState').classList.remove('warning');
+    const prior = await readLatestReport().catch(() => null);
+    const priorStamp = prior?.consultado_utc || null;
+    const requestId = 'manual-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    const requestedAt = Date.now();
+    let runUrl = null;
+    try {
+      setText('monitorState', 'Solicitando nueva medición a GitHub…');
+      const response = await fetch(api + '/dispatches', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        },
+        body: JSON.stringify({
+          event_type: 'aura-monitor-refresh',
+          client_payload: { request_id: requestId }
+        })
+      });
+      if (response.status !== 204) {
+        if (response.status === 401) throw new Error('GitHub rechazó el token. Vuelve a conectarlo en 06 · Publicar.');
+        if (response.status === 403) throw new Error('El token necesita permiso Contents (lectura y escritura) para GalleryStudio.');
+        if (response.status === 404) throw new Error('El token no tiene acceso a AuraDigitalJal/GalleryStudio o el repositorio no está disponible.');
+        if (response.status === 422) throw new Error('GitHub limitó las solicitudes. Inténtalo más tarde.');
+        throw new Error('GitHub no pudo iniciar la medición (HTTP ' + response.status + ').');
+      }
+
+      setText('monitorState', 'Solicitud aceptada. GitHub está preparando la medición…');
+      let runSucceeded = false;
+      // No contamos una lectura de JSON como medición nueva: esperamos a que
+      // GitHub termine el proceso específico de esta solicitud.
+      for (let attempt = 0; attempt < 45; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 6000));
+        let runs;
+        try {
+          runs = await githubRead(api + '/actions/runs?event=repository_dispatch&per_page=30', token);
+        } catch (_) {
+          continue;
+        }
+        const run = (runs.workflow_runs || []).find(item =>
+          item.path === '.github/workflows/aura-cloudflare-monitor.yml' &&
+          item.display_title === 'Aura R2 · ' + requestId
+        );
+        if (!run) {
+          setText('monitorState', 'Solicitud enviada. Esperando a que GitHub inicie la medición…');
+          continue;
+        }
+        if (typeof run.html_url === 'string' &&
+            /^https:\/\/github\.com\/AuraDigitalJal\/GalleryStudio\/actions\/runs\/\d+$/.test(run.html_url)) {
+          runUrl = run.html_url;
+          $('monitorRunLink').href = runUrl;
+        }
+        if (run.status !== 'completed') {
+          setText('monitorState', run.status === 'queued'
+            ? 'GitHub tiene la medición en cola…'
+            : 'Consultando métricas de Cloudflare…');
+          setText('monitorWorkflow', run.status === 'queued' ? 'Nueva medición en cola' : 'Nueva medición en proceso');
+          continue;
+        }
+        if (run.conclusion !== 'success') {
+          throw new Error('La medición terminó con error en GitHub (' + (run.conclusion || 'sin resultado') + '). Consulta Ver historial.');
+        }
+        runSucceeded = true;
+        break;
+      }
+
+      if (!runSucceeded) {
+        setText('monitorState', 'GitHub recibió la solicitud, pero aún no confirma el resultado. Consulta Ver historial.');
+        $('monitorState').classList.add('warning');
+        return;
+      }
+
+      // La ejecución es exitosa solo si produjo el reporte. Puede haber una
+      // demora breve de caché antes de que el archivo público lo refleje.
+      for (let attempt = 0; attempt < 7; attempt++) {
+        try {
+          const fresh = await readLatestReport();
+          if (!priorStamp || fresh.consultado_utc !== priorStamp) {
+            displayReport(fresh);
+            setText('monitorState', 'Nueva medición completada · ' + formatDate(fresh.consultado_utc));
+            $('monitorState').classList.remove('warning');
+            setText('monitorWorkflow', 'Nueva medición completada correctamente');
+            return;
+          }
+        } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      setText('monitorState', 'GitHub terminó la medición, pero el reporte público aún no refleja los cambios. Revisa Ver historial.');
+      $('monitorState').classList.add('warning');
+    } catch (error) {
+      setText('monitorState', 'No se actualizó: ' + (error.message || 'Error de conexión'));
+      $('monitorState').classList.add('warning');
+      if (runUrl) $('monitorRunLink').href = runUrl;
+    } finally {
+      measuring = false;
       refresh.disabled = false;
       refresh.textContent = 'Actualizar datos';
     }
-    await loadWorkflowStatus();
   }
 
   function openMonitor() {
@@ -216,7 +337,7 @@
   }
   trigger.addEventListener('click', openMonitor);
   close.addEventListener('click', closeMonitor);
-  refresh.addEventListener('click', loadMonitor);
+  refresh.addEventListener('click', startMeasurement);
   overlay.addEventListener('click', (event) => { if (event.target === overlay) closeMonitor(); });
   document.addEventListener('keydown', (event) => {
     if (!overlay.hidden && event.key === 'Escape') { event.preventDefault(); closeMonitor(); }
