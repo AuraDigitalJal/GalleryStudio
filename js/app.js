@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.4.31';
+  const VERSION = '1.4.32';
   const $ = id => document.getElementById(id);
   const SECTION_DEFS = [
     ['getting-ready', 'Getting Ready', 'Los Preparativos'],
@@ -68,6 +68,7 @@
   let photoSeq = 0;
   let detachedPreviewWindow = null;
   let previewTimer = null;
+  let pendingTextPreview = null;
   let sharePreviewGeneration = 0;
   let githubUser = null;
   let exportBusy = false;
@@ -1327,11 +1328,43 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
 <\/script></body></html>`;
   }
 
+  // Nunca reconstruir el iframe mientras una persona escribe: Safari puede
+  // mover el scroll o la posición del cursor, incluso en campos de contraseña.
+  function isTypingInEditor() {
+    const active = document.activeElement;
+    return !!(active && active.matches?.('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), textarea, [contenteditable="true"]'));
+  }
+
   function schedulePreview(anchor = '', immediate = false) {
     clearTimeout(previewTimer);
-    // La vista previa sigue siendo en vivo, pero se agrupan cambios rápidos para no
-    // repintar el iframe durante cada pequeño movimiento del usuario.
-    previewTimer = setTimeout(() => updatePreview(anchor), immediate ? 0 : 220);
+    previewTimer = null;
+    if (isTypingInEditor()) {
+      pendingTextPreview = { anchor, immediate };
+      return;
+    }
+    pendingTextPreview = null;
+    previewTimer = setTimeout(() => {
+      previewTimer = null;
+      if (isTypingInEditor()) {
+        pendingTextPreview = { anchor, immediate };
+        return;
+      }
+      updatePreview(anchor);
+    }, immediate ? 0 : 220);
+  }
+
+  // Actualiza una sola vez al salir del campo; nunca mientras se introduce
+  // una clave, título, descripción o cualquier otro texto del editor.
+  function refreshPreviewAfterTyping() {
+    document.addEventListener('focusout', () => {
+      setTimeout(() => {
+        if (pendingTextPreview && !isTypingInEditor()) {
+          const { anchor, immediate } = pendingTextPreview;
+          pendingTextPreview = null;
+          schedulePreview(anchor, immediate);
+        }
+      }, 0);
+    });
   }
 
   function captureEditorViewport() {
@@ -1357,16 +1390,14 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
   function restoreEditorViewport(snap) {
     if (!snap) return;
     requestAnimationFrame(() => {
+      // Un iframe que terminó de cargar no debe recuperar el foco ni
+      // reposicionar un cursor que la persona ya movió después.
+      if (isTypingInEditor()) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active !== snap.active) return;
       const pane = document.querySelector('.editor-pane');
       if (pane) pane.scrollTop = snap.paneY;
       window.scrollTo({ left: snap.pageX, top: snap.pageY, behavior: 'auto' });
-      const active = snap.active;
-      if (active?.isConnected) {
-        try { active.focus({ preventScroll: true }); } catch (_) {}
-        try {
-          if (snap.start !== null && typeof active.setSelectionRange === 'function') active.setSelectionRange(snap.start, snap.end ?? snap.start);
-        } catch (_) {}
-      }
     });
   }
 
@@ -2356,6 +2387,7 @@ qsa('[data-gallery-more]').forEach(b=>b.addEventListener('click',()=>{const grid
   }
 
   function init() {
+    refreshPreviewAfterTyping();
     buildSectionEditor(); buildTargetOptions(); bindBaseForm(); updateBrandEditor(); setupDropzone(); renderPhotoList(); refreshSharePreview(); updatePreview();
     const panels = [...document.querySelectorAll('details.panel')];
     panels.forEach(panel => panel.addEventListener('toggle', () => {
