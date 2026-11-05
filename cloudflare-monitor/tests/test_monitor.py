@@ -26,11 +26,13 @@ class MonitorTests(unittest.TestCase):
             "operaciones_mes_bucket":{"A":637,"B":4280,"sin_clasificar":0},
             "transferencia_mes_bucket":{"bytesDownload":0,"bytesUpload":1000},
             "worker":{"requests":1455,"errors":0},
+            "worker_dia_cuenta":{"desde_utc":"2026-11-03T00:00:00Z","requests":54,"errors":0},
             "alertas_orientativas":[],"advertencias":[]
         }
         summary = monitor.markdown(report)
         self.assertIn("134.85 MB",summary)
         self.assertIn("4,280",summary)
+        self.assertIn("Workers: solicitudes hoy (cuenta, UTC) | 54",summary)
         self.assertNotIn("CLOUDFLARE_API_TOKEN",summary)
 
 
