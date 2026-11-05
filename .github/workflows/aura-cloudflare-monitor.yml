@@ -1,8 +1,11 @@
 name: Aura Digital - Monitoreo Cloudflare
+run-name: Aura R2 · ${{ github.event.client_payload.request_id || github.event_name }}
 on:
   schedule:
     - cron: '15 14 * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [aura-monitor-refresh]
   # Ejecutar también cuando se repara el monitor, sin esperar al día siguiente.
   push:
     paths:
