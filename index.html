@@ -398,13 +398,14 @@
           <p>Último despliegue Pages: <span id="monitorPages">Consultando…</span></p>
         </div>
         <div class="aura-monitor-actions">
-          <button class="btn primary" type="button" id="monitorRefresh">Actualizar datos</button>
+          <button class="btn primary" type="button" id="monitorRefresh" title="Solicitar una nueva medición a Cloudflare mediante GitHub">Actualizar datos</button>
           <a class="btn secondary" id="monitorRunLink" href="https://github.com/AuraDigitalJal/GalleryStudio/actions/workflows/aura-cloudflare-monitor.yml" target="_blank" rel="noopener noreferrer">Ver historial ↗</a>
         </div>
+        <p class="aura-monitor-quota-note">Para medir ahora, utiliza el token de GitHub de 06 · Publicar con permiso de escritura en GalleryStudio. La clave de Cloudflare no sale de GitHub Actions.</p>
       </div>
     </section>
   </div>
   <script src="js/app.js?v=20261104-escritura-estable"></script>
-  <script src="js/monitor-ui.js?v=20261105-reporte"></script>
+  <script src="js/monitor-ui.js?v=20261105-medicion-manual"></script>
 </body>
 </html>
