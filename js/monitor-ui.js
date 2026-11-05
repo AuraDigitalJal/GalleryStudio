@@ -8,6 +8,7 @@
   const repo = 'AuraDigitalJal/GalleryStudio';
   const api = 'https://api.github.com/repos/' + repo;
   const reportPath = '/contents/cloudflare-monitor/estado/ultimo.json?ref=monitor-estado';
+  const rawReportUrl = 'https://raw.githubusercontent.com/' + repo + '/monitor-estado/cloudflare-monitor/estado/ultimo.json';
   const $ = (id) => document.getElementById(id);
   const overlay = $('monitorOverlay');
   const trigger = $('openMonitor');
@@ -135,10 +136,11 @@
     notes.textContent = (unknown ? formatNumber(unknown) + ' operaciones sin clasificar. ' : '') +
       'Datos mensuales en UTC y almacenamiento de la última muestra. Los límites gratuitos aplican a toda la cuenta, no solo a este bucket. Las solicitudes no son visitantes únicos.';
     const age = Date.now() - new Date(data.consultado_utc).getTime();
-    setText('monitorState', age > 48 * 3600 * 1000
-      ? 'Datos anteriores a 48 horas · consultar ejecución de GitHub'
-      : 'Lectura disponible · actualización diaria');
-    $('monitorState').classList.toggle('warning', age > 48 * 3600 * 1000);
+    const stale = !Number.isFinite(age) || age < 0 || age > 30 * 3600 * 1000;
+    setText('monitorState', stale
+      ? 'Reporte desactualizado · la medición automática requiere revisión'
+      : 'Último reporte disponible · actualización diaria, no en tiempo real');
+    $('monitorState').classList.toggle('warning', stale);
   }
 
   async function loadWorkflowStatus() {
@@ -165,6 +167,21 @@
     }
   }
 
+  // La API pública de GitHub puede limitar peticiones sin autenticar.
+  // Si ocurre, recuperamos el mismo JSON agregado desde raw.githubusercontent.com.
+  async function readLatestReport() {
+    try {
+      const file = await githubRead(api + reportPath);
+      if (file.encoding !== 'base64' || typeof file.content !== 'string') throw new Error('Formato de reporte no compatible.');
+      const bytes = Uint8Array.from(atob(file.content.replace(/\s/g, '')), ch => ch.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    } catch (firstError) {
+      const response = await fetch(rawReportUrl + '?v=' + Date.now(), { cache: 'no-store' });
+      if (!response.ok) throw firstError;
+      return response.json();
+    }
+  }
+
   async function loadMonitor() {
     if (loading) return;
     loading = true;
@@ -173,10 +190,7 @@
     setText('monitorState', 'Consultando último reporte…');
     $('monitorState').classList.remove('warning');
     try {
-      const file = await githubRead(api + reportPath);
-      if (file.encoding !== 'base64' || typeof file.content !== 'string') throw new Error('Formato de archivo no compatible.');
-      const bytes = Uint8Array.from(atob(file.content.replace(/\s/g, '')), ch => ch.charCodeAt(0));
-      displayReport(JSON.parse(new TextDecoder().decode(bytes)));
+      displayReport(await readLatestReport());
     } catch (error) {
       setText('monitorState', 'No disponible: ' + (error.message || 'Error inesperado'));
       $('monitorState').classList.add('warning');
