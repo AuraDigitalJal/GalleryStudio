@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '15 14 * * *'
   workflow_dispatch:
+  # Ejecutar también cuando se repara el monitor, sin esperar al día siguiente.
+  push:
+    paths:
+      - 'cloudflare-monitor/**'
+      - '.github/workflows/aura-cloudflare-monitor.yml'
 
 permissions:
   contents: write
