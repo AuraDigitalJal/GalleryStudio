@@ -1,18 +1,18 @@
 {
-  "consultado_utc": "2026-11-09T01:00:01Z",
+  "consultado_utc": "2026-11-09T15:13:42Z",
   "mes_desde_utc": "2026-11-01T00:00:00Z",
   "almacenamiento": {
-    "megabytes": 147.85,
-    "objetos": 282
+    "megabytes": 174.5,
+    "objetos": 334
   },
   "operaciones_mes_bucket": {
     "A": 772,
-    "B": 5695,
+    "B": 6455,
     "sin_clasificar": 30
   },
   "transferencia_mes_bucket": {
     "bytesUpload": 356747087,
-    "bytesDownload": 1960753305
+    "bytesDownload": 2343339009
   },
   "worker": {
     "requests": 1384,
