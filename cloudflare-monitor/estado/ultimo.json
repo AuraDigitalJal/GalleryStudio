@@ -1,5 +1,5 @@
 {
-  "consultado_utc": "2026-11-13T20:53:25Z",
+  "consultado_utc": "2026-11-14T19:08:30Z",
   "mes_desde_utc": "2026-11-01T00:00:00Z",
   "almacenamiento": {
     "megabytes": 174.5,
@@ -19,7 +19,7 @@
     "errors": 0
   },
   "worker_dia_cuenta": {
-    "desde_utc": "2026-11-13T00:00:00Z",
+    "desde_utc": "2026-11-14T00:00:00Z",
     "requests": 0,
     "errors": 0
   },
