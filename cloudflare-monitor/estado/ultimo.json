@@ -1,5 +1,5 @@
 {
-  "consultado_utc": "2026-11-19T22:08:13Z",
+  "consultado_utc": "2026-11-20T21:47:18Z",
   "mes_desde_utc": "2026-11-01T00:00:00Z",
   "almacenamiento": {
     "megabytes": 174.5,
@@ -7,19 +7,19 @@
   },
   "operaciones_mes_bucket": {
     "A": 772,
-    "B": 6597,
+    "B": 6599,
     "sin_clasificar": 30
   },
   "transferencia_mes_bucket": {
     "bytesUpload": 356747087,
-    "bytesDownload": 2407677336
+    "bytesDownload": 2408728804
   },
   "worker": {
     "requests": 1384,
     "errors": 0
   },
   "worker_dia_cuenta": {
-    "desde_utc": "2026-11-19T00:00:00Z",
+    "desde_utc": "2026-11-20T00:00:00Z",
     "requests": 0,
     "errors": 0
   },
